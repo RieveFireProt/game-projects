@@ -35,10 +35,38 @@ function placement code should use.
 **Footprint ≠ sprite size.** A bookshelf may be 32×64 pixels but occupy 2×1
 floor tiles. These are two separate numbers and object data carries both.
 
-**Palette.** Pick a fixed 16–32 colour palette (lospec.com) and draw everything
-with it. This is what makes a kid's drawings and a downloaded asset pack look
-like one game instead of a ransom note. *Not yet chosen — do this before real
-art starts.*
+**Palette: [Aren32](https://lospec.com/palette-list/aren32).** Everything is
+drawn from these 32 colours — hand-drawn art, downloaded assets, and any colour
+set in code. This is what makes mixed sources look like one game instead of a
+ransom note.
+
+- `assets/palette/aren32.hex` — import this into Piskel or Aseprite.
+- `assets/palette/aren32.txt` — same palette in paint.net format.
+- `assets/palette/aren32_swatch.png` — visual reference with indices.
+- `scripts/palette.gd` — `Palette.COLORS[i]`, the ramps, and named colours
+  (`Palette.TEXT`, `Palette.COIN`, `Palette.GOOD`…). **Generated** by
+  `tools/gen_palette.py`; edit the `.hex` and re-run, don't hand-edit the `.gd`.
+
+Ramps, each ordered dark → light. Shade *within* a ramp and unrelated sprites
+still look related:
+
+| Ramp | Indices | Use |
+|---|---|---|
+| `WARM`  | 0–8   | near-black → plum → terracotta → peach |
+| `BERRY` | 10–14 | purple → red |
+| `GOLD`  | 14–17 | red-orange → pale yellow |
+| `GREEN` | 21→18 | dark green → yellow-green |
+| `TEAL`  | 22–26 | dark green → mint |
+| `COOL`  | 31→27 | near-black blue → white |
+
+Suggested cat coats, so the breeds stay distinguishable: orange tabby from
+`WARM` 3–8, grey from `COOL`, black/tuxedo from `WARM` 0–3 plus white, calico
+from `WARM` + `COOL` + white.
+
+One property worth knowing: **Aren32 has no muted brown.** Its warm ramp runs
+plum → rose → terracotta → orange → peach. A wood floor has to be built from
+indices 4–6 with drawn texture doing the work; flat blocks of them read
+distinctly rosy, which is why the placeholder floor looks like terracotta tile.
 
 ---
 
@@ -149,6 +177,7 @@ failure mode is "the toy is too cheap", not a stack trace.
 assets/          art, replaceable without touching code
   cats/          one sprite sheet per breed
   objects/
+  palette/       Aren32 source files + swatch reference
   room/          tiles_placeholder.png -- flat colour stand-in, replace freely
   ui/
 data/            tuning files: numbers, not code
@@ -157,7 +186,8 @@ data/            tuning files: numbers, not code
   rooms/         room dimensions
 resources/       engine resources (tilesets, sprite frames)
 scenes/
-scripts/
+scripts/         palette.gd here is generated -- see tools/
+tools/           dev-time generators, not shipped
 ```
 
 ## Working with the Godot editor

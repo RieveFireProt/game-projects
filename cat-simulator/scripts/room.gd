@@ -7,8 +7,11 @@ extends Node2D
 
 ## Index of the atlas source inside room_tileset.tres.
 const SOURCE_ID := 0
-## Atlas coordinates within that source.
+## Atlas coordinates within that source. FLOOR_TILES[0] is the base floor; the
+## rest are accents scattered sparingly -- an even mix reads as a checkerboard.
 const FLOOR_TILES := [Vector2i(0, 0), Vector2i(1, 0)]
+## Chance any given floor cell uses an accent tile instead of the base.
+const FLOOR_ACCENT_CHANCE := 0.12
 const WALL_TILE := Vector2i(2, 0)
 const WALL_TOP_TILE := Vector2i(3, 0)
 ## Fixed seed so the floor variant scatter is identical every run.
@@ -27,6 +30,9 @@ func _ready() -> void:
 		room_data = RoomData.new()
 	_paint()
 	_room_name.text = room_data.display_name
+	_room_name.add_theme_color_override("font_color", Palette.TEXT)
+	_room_name.add_theme_color_override("font_shadow_color", Palette.SHADOW)
+	_room_name.add_theme_constant_override("shadow_offset_y", 1)
 
 	var bounds := Rect2i(Vector2i.ZERO, room_data.pixel_size())
 	_camera.set_bounds(bounds)
@@ -43,7 +49,9 @@ func _paint() -> void:
 	var walkable := room_data.floor_rect()
 	for y in range(walkable.position.y, walkable.end.y):
 		for x in range(walkable.position.x, walkable.end.x):
-			var variant: Vector2i = FLOOR_TILES[rng.randi() % FLOOR_TILES.size()]
+			var variant: Vector2i = FLOOR_TILES[0]
+			if FLOOR_TILES.size() > 1 and rng.randf() < FLOOR_ACCENT_CHANCE:
+				variant = FLOOR_TILES[1 + rng.randi() % (FLOOR_TILES.size() - 1)]
 			_floor.set_cell(Vector2i(x, y), SOURCE_ID, variant)
 
 	for y in room_data.wall_height_tiles:

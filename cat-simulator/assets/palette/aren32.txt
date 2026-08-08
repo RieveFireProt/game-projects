@@ -1,0 +1,37 @@
+;paint.net Palette File
+;Downloaded from Lospec.com/palette-list
+;Palette Name: Aren32
+;Description: My main palette that's been slowly growing since i started doing pixel art
+;Colors: 32
+FF1a1516
+FF21181b
+FF2c2025
+FF3d2936
+FF52333f
+FF8f4d57
+FFbd6a62
+FFffae70
+FFffce91
+FFfea7a7
+FF451d42
+FF611e4a
+FF81204f
+FFad2f45
+FFde523e
+FFe67839
+FFf0b541
+FFffee83
+FFc8d45d
+FFa4c443
+FF63ab3f
+FF3b7d4f
+FF233b36
+FF2a594f
+FF368782
+FF4fa4b8
+FF92e8c0
+FFffffff
+FFa3a7c2
+FF686f99
+FF454a6a
+FF1d2235
