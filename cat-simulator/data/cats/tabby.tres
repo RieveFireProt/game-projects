@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="CatData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/cat_data.gd" id="1_cat_data"]
+[ext_resource type="SpriteFrames" path="res://resources/cats/tabby_frames.tres" id="2_frames"]
+
+[resource]
+script = ExtResource("1_cat_data")
+display_name = "Tabby"
+frames = ExtResource("2_frames")
+hunger_decay = 1.5
+energy_decay = 1.0
+happiness_decay = 0.8
+walk_speed = 22.0
+rest_min = 1.5
+rest_max = 5.0
+sit_chance = 0.35

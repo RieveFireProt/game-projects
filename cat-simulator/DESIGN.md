@@ -148,7 +148,9 @@ In Piskel:
    horizontal line. Save as `<animation>.png`.
 
 Drop the file in `assets/cats/<breed>/` — the filename *is* the animation name,
-so `walk.png` becomes the `walk` animation. Then:
+so `walk.png` becomes the `walk` animation. **A leading underscore marks
+reference art**: `_base.png` is a pose to draw from and is skipped, where
+`base.png` would become a one-frame animation called `base`. Then:
 
 ```
 python tools/build_cat_frames.py
@@ -241,6 +243,58 @@ If a `.tscn` is open in the editor while it's edited on disk, the editor can
 overwrite the change on its next save. Close the scene tab (or Project → Reload
 Current Project) before external edits, and reopen after.
 
+---
+
+## Simulation
+
+**Time does not pass while the game is closed.** Deliberate call: needs only
+decay during play, so a neglected cat never greets you starving. Everything
+below follows from that — decay is driven by elapsed play time, not by
+comparing timestamps across sessions.
+
+**Three autoloads**, in this load order (the later ones depend on the earlier):
+
+| Autoload | Owns |
+|---|---|
+| `Grid` | `TILE_SIZE` and the bottom-centre anchor helpers |
+| `GameClock` | simulated time: `ticked`, `time_scale`, `paused`, `play_time` |
+| `GameState` | the save file, `coins` |
+
+**Nothing uses its own `_process` for simulation.** Systems connect to
+`GameClock.ticked`. That's what makes `paused` and `time_scale` apply everywhere
+at once, and it's what lets tests drive ten minutes of decay instantly via
+`GameClock.advance()` instead of waiting.
+
+**Needs** are three meters where **100 is satisfied and 0 is empty, for all
+three**. Uniform direction matters: a meter that *rises* to mean "bad" is how
+you end up with an inverted bar nobody notices until playtest. Decay rates are
+points per minute and live in `data/cats/<breed>.tres`, not in code.
+
+**Saving** is JSON at `user://save.json`, indented so it's readable — being able
+to open your own save and see what the game thinks is going on is worth more
+than the bytes. Autosaves every 30s of play and on window close.
+
+Systems don't hand state to `GameState`. They connect to `collecting` and
+`applying` and read/write their own key in the save dictionary, so a new system
+adds itself without editing the save code. The file carries a `version`; an
+unrecognised one starts fresh rather than guessing.
+
+**Dev keys** (in the room): `=` and `-` step time scale through 1× / 10× / 60× /
+300×, `P` pauses. Meters take about an hour to drain at 1×, which is unwatchable
+while tuning the very rates you're trying to judge.
+
+## Testing
+
+```
+godot --headless --path . res://tools/smoke_test.tscn      # decay, save, restore
+godot --headless --script res://tools/verify_cat_frames.gd # sprite resources
+```
+
+Both exit non-zero on failure. The smoke test is a *scene*, not a `--script`
+run, because Godot only instantiates autoloads for a real main scene.
+
 ## Not built yet
 
-Cats, needs/decay, object placement, shop, economy, save/load, day cycle.
+Interactions (feed / pet / play — nothing responds to input yet), objects and
+placement, the occupancy grid, shop and economy, multiple cats and the portrait
+row, day cycle. `coins` exists in the save and is always 0.

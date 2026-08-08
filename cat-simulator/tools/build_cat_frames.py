@@ -55,12 +55,18 @@ def check_palette(img: Image.Image, palette, label: str) -> list[str]:
 
 def build_breed(breed_dir: Path, palette) -> bool:
     breed = breed_dir.name
-    strips = sorted(p for p in breed_dir.glob("*.png"))
+    all_pngs = sorted(breed_dir.glob("*.png"))
+    # A leading underscore marks reference art -- a base pose to draw from, a
+    # colour study, a scratch file. Without this every stray PNG in the folder
+    # silently becomes a bogus animation named after the file.
+    strips = [p for p in all_pngs if not p.name.startswith("_")]
     if not strips:
         print(f"{breed}: no PNG strips found, skipping")
         return False
 
     print(f"{breed}:")
+    for skipped in (p for p in all_pngs if p.name.startswith("_")):
+        print(f"  - {skipped.name} (reference, not an animation)")
     ext_lines, sub_lines, anim_lines = [], [], []
     load_steps = 1
 
@@ -111,7 +117,9 @@ def build_breed(breed_dir: Path, palette) -> bool:
 
     out_dir = ROOT / "resources" / "cats"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out = out_dir / f"{breed}.tres"
+    # `_frames` suffix keeps this distinct from data/cats/<breed>.tres, which is
+    # the tuning file. Same breed, two very different resources.
+    out = out_dir / f"{breed}_frames.tres"
     body = [f'[gd_resource type="SpriteFrames" load_steps={load_steps} format=3]', ""]
     body += ext_lines + [""] + sub_lines
     body += ["[resource]", f"animations = [{', '.join(anim_lines)}]"]

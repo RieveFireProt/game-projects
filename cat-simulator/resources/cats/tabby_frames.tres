@@ -1,7 +1,8 @@
-[gd_resource type="SpriteFrames" load_steps=12 format=3]
+[gd_resource type="SpriteFrames" load_steps=14 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/cats/tabby/idle.png" id="idle_tex"]
 [ext_resource type="Texture2D" path="res://assets/cats/tabby/sit.png" id="sit_tex"]
+[ext_resource type="Texture2D" path="res://assets/cats/tabby/tabby_base.png" id="tabby_base_tex"]
 [ext_resource type="Texture2D" path="res://assets/cats/tabby/walk.png" id="walk_tex"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_idle_0"]
@@ -19,6 +20,10 @@ region = Rect2(0, 0, 32, 32)
 [sub_resource type="AtlasTexture" id="AtlasTexture_sit_1"]
 atlas = ExtResource("sit_tex")
 region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_tabby_base_0"]
+atlas = ExtResource("tabby_base_tex")
+region = Rect2(0, 0, 32, 32)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_walk_0"]
 atlas = ExtResource("walk_tex")
@@ -59,6 +64,14 @@ animations = [{
 "loop": true,
 "name": &"sit",
 "speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tabby_base_0")
+}],
+"loop": true,
+"name": &"tabby_base",
+"speed": 6.0
 }, {
 "frames": [{
 "duration": 1.0,

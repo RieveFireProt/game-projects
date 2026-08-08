@@ -17,7 +17,10 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+; Order matters: GameState connects to GameClock on ready.
 Grid="*res://scripts/grid.gd"
+GameClock="*res://scripts/game_clock.gd"
+GameState="*res://scripts/game_state.gd"
 
 [display]
 

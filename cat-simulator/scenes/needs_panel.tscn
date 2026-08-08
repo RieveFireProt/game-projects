@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/needs_panel.gd" id="1_needs_panel"]
+
+[node name="NeedsPanel" type="PanelContainer"]
+offset_left = 4.0
+offset_top = 22.0
+offset_right = 80.0
+offset_bottom = 60.0
+script = ExtResource("1_needs_panel")
