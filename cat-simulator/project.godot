@@ -11,13 +11,26 @@ config_version=5
 [application]
 
 config/name="Cat Simulator"
+run/main_scene="res://scenes/room.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[autoload]
+
+Grid="*res://scripts/grid.gd"
+
 [display]
 
+; 384x216 is the pixel-art canvas, not the room. It scales 5x exactly to
+; 1920x1080. window_*_override just opens a comfortably sized dev window.
+window/size/viewport_width=384
+window/size/viewport_height=216
+window/size/window_width_override=1152
+window/size/window_height_override=648
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/stretch/aspect="keep"
+; Integer-only scaling; the alternative blurs or shears the pixel grid.
+window/stretch/scale_mode="integer"
 
 [physics]
 
@@ -25,6 +38,8 @@ window/stretch/aspect="expand"
 
 [rendering]
 
+; 0 = Nearest. The engine default is Linear, which turns pixel art to mush.
+textures/canvas_textures/default_texture_filter=0
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
