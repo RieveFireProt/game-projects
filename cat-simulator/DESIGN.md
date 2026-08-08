@@ -40,8 +40,12 @@ drawn from these 32 colours — hand-drawn art, downloaded assets, and any colou
 set in code. This is what makes mixed sources look like one game instead of a
 ransom note.
 
-- `assets/palette/aren32.hex` — import this into Piskel or Aseprite.
-- `assets/palette/aren32.txt` — same palette in paint.net format.
+- **`assets/palette/aren32.pal`** — **the one Piskel actually imports.** The
+  `.hex` and `.txt` downloads are rejected by Piskel's palette importer; only
+  the JASC-PAL format loads. Use this file.
+- `assets/palette/aren32.hex` — works in Aseprite; also the source the
+  generator reads.
+- `assets/palette/aren32.txt` — paint.net format.
 - `assets/palette/aren32_swatch.png` — visual reference with indices.
 - `scripts/palette.gd` — `Palette.COLORS[i]`, the ramps, and named colours
   (`Palette.TEXT`, `Palette.COIN`, `Palette.GOOD`…). **Generated** by
@@ -128,9 +132,50 @@ tuxedo, grey, calico, black. Same 20 frames, five distinct cats. Separate PNGs
 are fine; the runtime-shader approach is an optimisation for when there are 30
 breeds, not 5.
 
-**Format:** one PNG sheet per cat, rows = animation, columns = frames. Becomes
-an `AnimatedSprite2D` with a `SpriteFrames` resource, which is text and can be
-authored without opening the editor.
+### Making sprites — the actual workflow
+
+**There is no sprite sheet to assemble by hand.** One PNG per animation, frames
+left to right, and a generator turns them into Godot animations.
+
+In Piskel:
+
+1. New sprite, size **32 × 32**.
+2. Import the palette: palette panel → **`assets/palette/aren32.pal`**.
+3. Draw frame 1. Duplicate it for frame 2 and nudge — never redraw a frame from
+   scratch when it's a small change from the previous one.
+4. Preview loops live in the corner. Set the FPS there to check the feel.
+5. **Export → PNG → "Export as spritesheet", 1 row**, all frames in a
+   horizontal line. Save as `<animation>.png`.
+
+Drop the file in `assets/cats/<breed>/` — the filename *is* the animation name,
+so `walk.png` becomes the `walk` animation. Then:
+
+```
+python tools/build_cat_frames.py
+```
+
+That writes `resources/cats/<breed>.tres`, a `SpriteFrames` ready to drop on an
+`AnimatedSprite2D`. It also **checks every pixel against Aren32** and names any
+stray colours — the one art mistake that stays invisible until everything is
+side by side.
+
+Rules the generator enforces: strips must be **32px tall** with width a multiple
+of 32. Anything else is reported and skipped rather than silently mangled.
+
+Playback speeds live in `SPEEDS` in that script (idle 4, walk 8, sleep 2…).
+Verify what the engine actually loaded with:
+
+```
+godot --headless --script res://tools/verify_cat_frames.gd
+```
+
+### On AI-generated reference art
+
+Useful for deciding *poses and style*; not usable as source art. Generated
+"pixel art" is almost never on a real pixel grid — the apparent pixels are
+different sizes, edges are anti-aliased, and it carries hundreds of colours
+instead of 32. Treat it as a drawing to copy from at 32×32, not a file to
+import.
 
 ### Objects — the actual game
 
