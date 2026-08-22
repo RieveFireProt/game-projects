@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Path of the Cat Warrior</title>
+<style>
+:root{
+  --stone-0:#0b0d12; --stone-2:#1d222e; --stone-3:#2a3140;
+  --ink:#e8e2d4; --ink-dim:#a49c8b;
+  --gold:#d4af58; --gold-dim:#8c7333; --gold-bright:#f4d98b;
+  --ice:#8fd4f0; --ice-deep:#2b6f96;
+  --serif:'Palatino Linotype','Book Antiqua',Palatino,Georgia,'Times New Roman',serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 700px at 50% -10%, #2a3040 0%, transparent 60%),
+    linear-gradient(180deg,#0e111a 0%, #080a0f 100%);
+  background-attachment:fixed;
+  color:var(--ink);font-family:var(--serif);min-height:100vh;padding:18px 14px 70px;
+}
+.wrap{max-width:1180px;margin:0 auto}
+.panel{
+  background:linear-gradient(180deg, rgba(32,38,50,.95), rgba(18,22,30,.95));
+  border:1px solid var(--gold-dim);border-radius:10px;position:relative;
+  box-shadow:0 0 0 1px rgba(0,0,0,.6), 0 10px 30px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);
+}
+.panel::before{content:"";position:absolute;inset:4px;border:1px solid rgba(212,175,88,.18);border-radius:6px;pointer-events:none}
+
+/* header */
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:16px 20px;margin-bottom:16px}
+.crest{width:46px;height:46px;flex:0 0 auto;filter:drop-shadow(0 0 6px rgba(212,175,88,.4))}
+.title-block{flex:1 1 260px}
+h1{
+  margin:0;font-size:28px;font-weight:600;letter-spacing:.03em;
+  background:linear-gradient(180deg,#f7e6b4,#d4af58 55%,#8c7333 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.sub{font-size:12px;color:var(--ink-dim);letter-spacing:.16em;text-transform:uppercase;margin-top:4px}
+.who-switch{display:flex;gap:8px;flex-wrap:wrap}
+button{
+  font-family:var(--serif);cursor:pointer;border-radius:6px;border:1px solid var(--gold-dim);
+  background:linear-gradient(180deg,#333b4c,#222836);color:var(--ink);padding:9px 18px;font-size:14px;
+  transition:transform .07s ease, filter .15s ease, box-shadow .15s ease;
+}
+button:hover{filter:brightness(1.25);box-shadow:0 0 12px rgba(212,175,88,.25)}
+button:active{transform:translateY(1px)}
+button.on{background:linear-gradient(180deg,#6b5520,#3d3013);border-color:var(--gold);color:var(--gold-bright)}
+
+/* ladder */
+.ladder{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:14px}
+.rank{
+  padding:12px;border-radius:10px;position:relative;overflow:hidden;
+  background:linear-gradient(180deg, rgba(32,38,50,.95), rgba(16,20,28,.95));
+  border:1px solid var(--rc,#8c7333);
+  box-shadow:0 6px 18px rgba(0,0,0,.5), inset 0 0 40px rgba(0,0,0,.35);
+}
+.rank .num{
+  position:absolute;top:8px;left:10px;z-index:2;
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--rc,#d4af58);
+  text-shadow:0 1px 4px #000;
+}
+.rank .lv{
+  position:absolute;top:8px;right:10px;z-index:2;font-size:12px;color:var(--gold-bright);
+  text-shadow:0 1px 4px #000;
+}
+.rank .art{
+  width:100%;aspect-ratio:1/1;border-radius:7px;overflow:hidden;margin-bottom:9px;
+  border:1px solid rgba(255,255,255,.07);
+}
+.rank .art svg{width:100%;height:100%;display:block}
+.rank h2{margin:0;font-size:15px;font-weight:600;color:var(--rc,#d4af58);line-height:1.25;min-height:2.5em}
+.rank .gear{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.rank .gi{
+  font-size:11.5px;color:var(--ink-dim);background:#10141c;border:1px solid var(--stone-3);
+  border-radius:5px;padding:4px 8px;
+}
+.rank .gi::before{content:"▪ ";color:var(--rc,#d4af58)}
+.rank.final{box-shadow:0 6px 26px rgba(212,175,88,.28), inset 0 0 40px rgba(0,0,0,.35)}
+
+/* generic sections */
+.section{padding:18px 20px;margin-top:16px}
+.section h3{
+  margin:0 0 12px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);
+  padding-bottom:6px;border-bottom:1px solid rgba(212,175,88,.2);
+}
+.earn{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.earn-col{background:#10141c;border:1px solid var(--stone-3);border-radius:8px;padding:12px}
+.earn-col .hd{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+.earn-col .amt{font-size:26px;color:var(--gold-bright);line-height:1}
+.earn-col .kind{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim)}
+.earn-col ul{margin:0;padding-left:18px;font-size:13px;line-height:1.75}
+.earn-col li::marker{color:var(--gold-dim)}
+
+.freeze{border-color:var(--ice-deep)!important}
+.freeze::before{border-color:rgba(143,212,240,.22)!important}
+.freeze h3{color:var(--ice);border-bottom-color:rgba(143,212,240,.22)}
+.freeze p{font-size:14px;line-height:1.7;margin:0 0 10px;max-width:70ch}
+.freeze strong{color:var(--ice)}
+.freeze .demo{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.freeze .demo .art{width:150px;height:150px;position:relative;border-radius:8px;overflow:hidden;border:2px solid var(--ice-deep);flex:0 0 auto}
+.freeze .demo .art svg{width:100%;height:100%;display:block;filter:grayscale(.55) brightness(.85) hue-rotate(150deg) saturate(1.4)}
+.freeze .demo .art .fr{
+  position:absolute;inset:0;mix-blend-mode:screen;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(214,242,255,.5), transparent 42%),
+    radial-gradient(circle at 82% 78%, rgba(143,212,240,.45), transparent 45%),
+    linear-gradient(140deg, rgba(43,111,150,.45), rgba(10,20,30,.25));
+}
+.freeze .demo .art .bn{
+  position:absolute;left:-24px;right:-24px;top:52%;transform:translateY(-50%) rotate(-8deg);
+  background:linear-gradient(180deg,rgba(214,242,255,.95),rgba(90,160,200,.9));
+  color:#08202e;text-align:center;font-size:13px;font-weight:700;letter-spacing:.28em;padding:3px 0;
+}
+.freeze .demo .txt{flex:1 1 260px;min-width:240px}
+.ways{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:12px}
+.way{background:rgba(20,45,62,.5);border:1px solid var(--ice-deep);border-radius:8px;padding:11px}
+.way .wh{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ice);margin-bottom:6px}
+.way p{font-size:13px;margin:0}
+
+.foot{margin-top:16px;padding:14px 20px;font-size:12px;color:var(--ink-dim);text-align:center}
+@media print{
+  body{background:#fff;color:#111}
+  .panel{background:#fff;box-shadow:none}
+  button,.who-switch{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+"use strict";
+
+/* ---------------------------------------------------------------------------
+   Show-and-tell page: the full rank ladder, how levels are earned, and what
+   the Frozen effect means. Read-only -- nothing here changes anyone's save.
+
+   NOTE: CHARACTERS, TIERS, AWARDS and catSvg() are copied from
+   cat-warrior-levels.html. If you change the ranks or the art there, paste the
+   new versions here too.
+   --------------------------------------------------------------------------- */
+
+const TIER_SIZE = 500;
+
+const CHARACTERS = [
+  {
+    id:"jacob", name:"Jacob", cat:"Stormwhisker of the Blue Banner", portrait:"assets/jacob.png",
+    art:{ fur:"#8b8074", furDark:"#584f46", furLight:"#cdc2b1", eye:"#2fc0ef",
+          metal:"#b9c6d3", metalDark:"#5d6a79", gold:"#d9b96a", accent:"#2f63ad" }
+  },
+  {
+    id:"isaac", name:"Isaac", cat:"Emberpaw of the Silver Guard", portrait:"assets/isaac.png",
+    art:{ fur:"#b8834e", furDark:"#7a5230", furLight:"#e4b784", eye:"#c2d94f",
+          metal:"#c9d4de", metalDark:"#66727f", gold:"#cfae63", accent:"#3d7ea3" }
+  }
+];
+
+const AWARDS = {
+  daily: [
+    { id:"followed", label:"Followed Directions all Day", value:50 }
+  ],
+  milestone: [
+    { id:"am_chores", label:"All morning chores complete by 7:30am", value:10 },
+    { id:"pm_chores", label:"Evening chores and showers complete by 6:30pm", value:10 }
+  ],
+  quick: [
+    { id:"dishes",  label:"Put dishes in the sink",            value:2 },
+    { id:"feedcat", label:"Feed the cat",                      value:2 },
+    { id:"read",    label:"Read a chapter of a chapter book",  value:2 },
+    { id:"board",   label:"Play a physical board game",        value:2 },
+    { id:"bedroom", label:"Clean up bedroom",                  value:2 }
+  ]
+};
+
+const TIERS = [
+  { title:"Kitten Recruit",                accent:"#9aa4b2", helm:"none",    gear:["Scavenged leather vest","Wooden practice blade"] },
+  { title:"Squire of the Hearth",          accent:"#c08a4a", helm:"band",    gear:["Bronze pauldron","Hearth-iron shortsword"] },
+  { title:"Whiskerguard",                  accent:"#8fb4d0", helm:"band",    gear:["Iron chainmail","Guard's round shield"] },
+  { title:"Clawblade",                     accent:"#7fc06a", helm:"circlet", gear:["Twin claw daggers","Ranger's cloak"] },
+  { title:"Ironpaw Warrior",               accent:"#c25a4e", helm:"circlet", gear:["Ironpaw greatsword","Studded warplate"] },
+  { title:"Knight of the Ninth Tail",      accent:"#b9c6d3", helm:"helm",    gear:["Knight's helm","Sigil of the Ninth Tail"] },
+  { title:"Frostmane Captain",             accent:"#8fd4f0", helm:"helm",    gear:["Frostmane cloak","Captain's warhorn"] },
+  { title:"Warden of the Emberfields",     accent:"#e2743a", helm:"helm",    gear:["Emberforged plate","Warden's greatshield"] },
+  { title:"Champion of the Cat Legion",    accent:"#d4af58", helm:"crown",   gear:["Legion battle banner","Champion's blade"] },
+  { title:"Grand Commander of the Legion", accent:"#f4d98b", helm:"crown",   gear:["Crown of the Ninth Star","Staff of the Ninth Star"] }
+];
+
+function tierIndex(level){ return Math.min(Math.floor(level / TIER_SIZE), TIERS.length - 1); }
+function tierOf(level){ return TIERS[tierIndex(level)]; }
+
+/* --- art (copied verbatim from cat-warrior-levels.html) --- */
+function catSvg(def, level){
+  const a = def.art;
+  const tier = tierOf(level);
+  const ti = tierIndex(level);
+  const helm = tier.helm;
+  const acc = tier.accent;
+
+  const helmet = {
+    none: "",
+    band: `<path d="M128 166 q72 -34 144 0 l0 15 q-72 -30 -144 0 z" fill="url(#steel-${def.id})" stroke="${a.metalDark}" stroke-width="2.5"/>`,
+    circlet: `<path d="M128 166 q72 -34 144 0 l0 14 q-72 -30 -144 0 z" fill="${a.gold}" stroke="#6b5520" stroke-width="2.5"/>
+              <path d="M186 150 l14 -18 l14 18 l-14 12 z" fill="${a.gold}" stroke="#6b5520" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="200" cy="152" r="7" fill="${acc}" stroke="#6b5520" stroke-width="1.5"/>`,
+    helm: `<path d="M124 168 q76 -38 152 0 l0 17 q-76 -32 -152 0 z" fill="url(#steel-${def.id})" stroke="${a.metalDark}" stroke-width="2.5"/>
+           <path d="M192 148 l8 -16 l8 16 l0 46 q-8 7 -16 0 z" fill="url(#steel-${def.id})" stroke="${a.metalDark}" stroke-width="2" stroke-linejoin="round"/>
+           <circle cx="200" cy="156" r="9" fill="${acc}" stroke="${a.metalDark}" stroke-width="2"/>
+           <path d="M138 176 q10 20 6 40 M262 176 q-10 20 -6 40" stroke="${a.metalDark}" stroke-width="3" fill="none" opacity=".7"/>`,
+    crown: `<path d="M126 166 q74 -34 148 0 l0 15 q-74 -30 -148 0 z" fill="${a.gold}" stroke="#6b5520" stroke-width="2.5"/>
+            <path d="M156 150 l10 -38 l16 28 l18 -42 l18 42 l16 -28 l10 38 z" fill="${a.gold}" stroke="#6b5520" stroke-width="2.5" stroke-linejoin="round"/>
+            <circle cx="200" cy="118" r="8" fill="${acc}" stroke="#6b5520" stroke-width="2"/>
+            <circle cx="166" cy="126" r="4.5" fill="${acc}"/><circle cx="234" cy="126" r="4.5" fill="${acc}"/>`
+  }[helm] || "";
+
+  const leather = ti === 0;
+  const mt  = leather ? "#8a6a45" : a.metal;
+  const mtD = leather ? "#4b3722" : a.metalDark;
+
+  const trim = ti >= 2
+    ? `<path d="M112 400 q6 -58 88 -58 q82 0 88 58" fill="none" stroke="${acc}" stroke-width="5" opacity=".9"/>`
+    : "";
+  const rivets = ti >= 3
+    ? `<circle cx="60" cy="330" r="5" fill="${a.gold}"/><circle cx="104" cy="316" r="5" fill="${a.gold}"/>
+       <circle cx="340" cy="330" r="5" fill="${a.gold}"/><circle cx="296" cy="316" r="5" fill="${a.gold}"/>`
+    : "";
+  const chestSigil = ti >= 5
+    ? `<path d="M200 348 l0 48 M178 366 l44 0" stroke="${a.gold}" stroke-width="10" stroke-linecap="round" opacity=".95"/>`
+    : "";
+  const cape = ti >= 6
+    ? `<path d="M14 400 q-6 -92 92 -132 l22 30 q-78 40 -70 102 z" fill="${acc}" opacity=".7"/>
+       <path d="M386 400 q6 -92 -92 -132 l-22 30 q78 40 70 102 z" fill="${acc}" opacity=".7"/>`
+    : "";
+  const aura = ti >= 7
+    ? `<circle cx="200" cy="196" r="150" fill="none" stroke="${acc}" stroke-opacity=".35" stroke-width="3" stroke-dasharray="6 12"/>`
+    : "";
+  const spikes = ti >= 8
+    ? `<path d="M50 318 l-20 -28 l34 12 z" fill="${a.gold}" stroke="#6b5520" stroke-width="2" stroke-linejoin="round"/>
+       <path d="M350 318 l20 -28 l-34 12 z" fill="${a.gold}" stroke="#6b5520" stroke-width="2" stroke-linejoin="round"/>`
+    : "";
+
+  return `<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cat warrior portrait">
+  <defs>
+    <radialGradient id="bg-${def.id}" cx="50%" cy="36%" r="74%">
+      <stop offset="0%" stop-color="${acc}" stop-opacity=".40"/>
+      <stop offset="55%" stop-color="#131824"/>
+      <stop offset="100%" stop-color="#070a10"/>
+    </radialGradient>
+    <linearGradient id="steel-${def.id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${mt}"/>
+      <stop offset="55%" stop-color="${mt}"/>
+      <stop offset="100%" stop-color="${mtD}"/>
+    </linearGradient>
+    <radialGradient id="face-${def.id}" cx="50%" cy="38%" r="66%">
+      <stop offset="0%" stop-color="${a.furLight}"/><stop offset="100%" stop-color="${a.fur}"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="400" height="400" fill="url(#bg-${def.id})"/>
+  <circle cx="200" cy="196" r="128" fill="none" stroke="${acc}" stroke-opacity=".20" stroke-width="2"/>
+  <circle cx="200" cy="196" r="140" fill="none" stroke="${acc}" stroke-opacity=".10" stroke-width="1"/>
+  ${aura}${cape}
+
+  <path d="M34 400 q6 -82 80 -104 q86 -24 172 0 q74 22 80 104 z"
+        fill="url(#steel-${def.id})" stroke="${mtD}" stroke-width="3"/>
+  <path d="M112 400 q6 -58 88 -58 q82 0 88 58 z" fill="${a.accent}" stroke="${mtD}" stroke-width="2.5"/>
+  ${trim}${chestSigil}
+  <ellipse cx="80" cy="342" rx="50" ry="38" fill="url(#steel-${def.id})" stroke="${mtD}" stroke-width="3"/>
+  <ellipse cx="320" cy="342" rx="50" ry="38" fill="url(#steel-${def.id})" stroke="${mtD}" stroke-width="3"/>
+  <path d="M44 336 q36 -28 72 -2 M356 336 q-36 -28 -72 -2"
+        stroke="${mt}" stroke-width="3" fill="none" opacity=".8"/>
+  ${rivets}${spikes}
+  <ellipse cx="200" cy="326" rx="62" ry="24" fill="url(#steel-${def.id})" stroke="${mtD}" stroke-width="2.5"/>
+  <ellipse cx="200" cy="304" rx="78" ry="32" fill="${a.fur}"/>
+  <ellipse cx="200" cy="298" rx="64" ry="24" fill="${a.furLight}" opacity=".5"/>
+
+  <path d="M120 174 L98 60 L188 124 z" fill="${a.fur}" stroke="${a.furDark}" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M280 174 L302 60 L212 124 z" fill="${a.fur}" stroke="${a.furDark}" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M128 162 L112 86 L172 128 z" fill="#c98d8d" opacity=".8"/>
+  <path d="M272 162 L288 86 L228 128 z" fill="#c98d8d" opacity=".8"/>
+
+  <ellipse cx="200" cy="204" rx="86" ry="76" fill="url(#face-${def.id})" stroke="${a.furDark}" stroke-width="3"/>
+  <path d="M118 216 l-16 8 l16 6 l-14 12 l18 2 M282 216 l16 8 l-16 6 l14 12 l-18 2"
+        fill="none" stroke="${a.fur}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M200 134 l-11 30 M200 134 l11 30" stroke="${a.furDark}" stroke-width="7" stroke-linecap="round" opacity=".7"/>
+  <path d="M150 154 q14 16 18 34 M250 154 q-14 16 -18 34" stroke="${a.furDark}" stroke-width="6" stroke-linecap="round" fill="none" opacity=".55"/>
+  <path d="M120 214 q22 4 34 2 M280 214 q-22 4 -34 2" stroke="${a.furDark}" stroke-width="6" stroke-linecap="round" fill="none" opacity=".45"/>
+
+  ${helmet}
+
+  <ellipse cx="164" cy="212" rx="24" ry="21" fill="#fbf8f2" opacity=".95"/>
+  <ellipse cx="236" cy="212" rx="24" ry="21" fill="#fbf8f2" opacity=".95"/>
+  <circle cx="164" cy="212" r="16" fill="${a.eye}"/>
+  <circle cx="236" cy="212" r="16" fill="${a.eye}"/>
+  <ellipse cx="164" cy="212" rx="6" ry="15" fill="#080b10"/>
+  <ellipse cx="236" cy="212" rx="6" ry="15" fill="#080b10"/>
+  <circle cx="157" cy="204" r="5" fill="#fff" opacity=".95"/>
+  <circle cx="229" cy="204" r="5" fill="#fff" opacity=".95"/>
+  <path d="M140 192 q24 -12 46 -3 M260 192 q-24 -12 -46 -3"
+        stroke="${a.furDark}" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <ellipse cx="182" cy="254" rx="25" ry="19" fill="${a.furLight}" opacity=".85"/>
+  <ellipse cx="218" cy="254" rx="25" ry="19" fill="${a.furLight}" opacity=".85"/>
+  <path d="M188 240 l24 0 l-12 13 z" fill="#e08a8a" stroke="${a.furDark}" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M200 254 l0 9 M200 263 q-13 11 -22 1 M200 263 q13 11 22 1"
+        stroke="${a.furDark}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <g stroke="${a.furLight}" stroke-width="2.5" stroke-linecap="round" opacity=".85" fill="none">
+    <path d="M156 250 q-48 -10 -70 -22"/><path d="M156 258 q-50 2 -72 0"/><path d="M156 266 q-46 12 -64 24"/>
+    <path d="M244 250 q48 -10 70 -22"/><path d="M244 258 q50 2 72 0"/><path d="M244 266 q46 12 64 24"/>
+  </g>
+</svg>`;
+}
+
+/* ---------------------------------------------------------------------------
+   Render
+   --------------------------------------------------------------------------- */
+
+let whoIdx = 0;
+
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, ch => (
+    {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]
+  ));
+}
+
+function crestSvg(){
+  return `<svg class="crest" viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M32 4 L58 12 v22 c0 14 -12 22 -26 26 C18 56 6 48 6 34 V12 z"
+          fill="#1c2130" stroke="#d4af58" stroke-width="2.5"/>
+    <path d="M18 30 l4 -18 l10 8 l10 -8 l4 18 z" fill="#d4af58"/>
+    <circle cx="26" cy="36" r="2.6" fill="#8fd4f0"/><circle cx="38" cy="36" r="2.6" fill="#8fd4f0"/>
+    <path d="M32 40 l0 4 M32 44 q-5 4 -8 0 M32 44 q5 4 8 0" stroke="#d4af58" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+// Every card needs its own gradient ids, or all ten reuse the first one's colors.
+function defForTier(base, i){
+  return Object.assign({}, base, { id: base.id + "-r" + i });
+}
+
+function renderLadder(){
+  const base = CHARACTERS[whoIdx];
+  return '<div class="ladder">' + TIERS.map((t, i) => {
+    const level = i * TIER_SIZE;
+    return '<div class="rank' + (i === TIERS.length-1 ? " final" : "") + '" style="--rc:' + t.accent + '">' +
+      '<div class="num">Rank ' + (i+1) + '</div>' +
+      '<div class="lv">' + level.toLocaleString() + '+</div>' +
+      '<div class="art">' + catSvg(defForTier(base, i), level) + '</div>' +
+      '<h2>' + esc(t.title) + '</h2>' +
+      '<div class="gear">' + t.gear.map(g => '<div class="gi">' + esc(g) + '</div>').join("") + '</div>' +
+    '</div>';
+  }).join("") + '</div>';
+}
+
+function renderEarn(){
+  const col = (amt, kind, list) =>
+    '<div class="earn-col"><div class="hd"><span class="amt">+' + amt + '</span>' +
+    '<span class="kind">' + esc(kind) + '</span></div><ul>' +
+    list.map(t => '<li>' + esc(t.label) + '</li>').join("") + '</ul></div>';
+
+  return '<div class="panel section"><h3>How you earn levels</h3><div class="earn">' +
+    col(50, "Every day", AWARDS.daily) +
+    col(10, "Milestones", AWARDS.milestone) +
+    col(2,  "Quick deeds", AWARDS.quick) +
+  '</div>' +
+  '<div style="margin-top:12px;font-size:13px;color:var(--ink-dim);line-height:1.7">' +
+    'Every task can be earned once a day, and the board resets every morning. ' +
+    'Do the daily <strong style="color:var(--gold)">five days in a row</strong> and you get a bonus <strong style="color:var(--gold)">+25</strong>. ' +
+    'Every <strong style="color:var(--gold)">500</strong> levels is a new rank, new armor, and a new title.' +
+  '</div></div>';
+}
+
+function renderFreeze(){
+  const base = CHARACTERS[whoIdx];
+  return '<div class="panel section freeze"><h3>&#10052; The Frozen Effect</h3>' +
+    '<div class="demo">' +
+      '<div class="art">' + catSvg(defForTier(base, 99), 1500) + '<div class="fr"></div><div class="bn">FROZEN</div></div>' +
+      '<div class="txt">' +
+        '<p>When nobody listens and we have to start raising our voices, the whole day stops moving forward. ' +
+        'That is what <strong>Frozen</strong> means: your warrior is stuck in the ice and cannot rank up.</p>' +
+        '<p>Here is the important part &mdash; <strong>you never lose levels.</strong> Anything you earn while ' +
+        'frozen is held safe in the ice. The second the ice breaks, every single one of them is released at ' +
+        'once and added to your total.</p>' +
+      '</div>' +
+    '</div>' +
+    '<div class="ways">' +
+      '<div class="way"><div class="wh">Way out #1 &mdash; earn it</div>' +
+        '<p>Earn <strong>20 levels</strong> off the normal quest board. Two milestones, or ten quick deeds. ' +
+        'The thaw bar on your sheet shows how close you are.</p></div>' +
+      '<div class="way"><div class="wh">Way out #2 &mdash; one job</div>' +
+        '<p>Sometimes Mom or Dad names one specific thing instead. Do that one thing and the ice breaks, ' +
+        'no matter how many levels you have.</p></div>' +
+      '<div class="way"><div class="wh">Always</div>' +
+        '<p>Nobody stays frozen overnight. At midnight the ice melts on its own and everything held ' +
+        'inside is released. A rough evening never becomes a rough morning.</p></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function render(){
+  const base = CHARACTERS[whoIdx];
+  document.getElementById("app").innerHTML =
+    '<div class="panel topbar">' +
+      crestSvg() +
+      '<div class="title-block"><h1>The Path of the Cat Warrior</h1>' +
+        '<div class="sub">Ten Ranks &middot; ' + esc(base.name) + " &middot; " + esc(base.cat) + '</div></div>' +
+      '<div class="who-switch">' +
+        CHARACTERS.map((c,i) =>
+          '<button class="' + (i === whoIdx ? "on" : "") + '" data-who="' + i + '">' + esc(c.name) + '</button>'
+        ).join("") +
+      '</div>' +
+    '</div>' +
+    renderLadder() +
+    renderEarn() +
+    renderFreeze() +
+    '<div class="panel foot">Every warrior starts at Rank 1 with nothing but a leather vest and a wooden sword. ' +
+    'Everyone who reaches the crown got there the same way &mdash; one day at a time.</div>';
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-who]");
+  if(!b) return;
+  whoIdx = parseInt(b.getAttribute("data-who"), 10);
+  render();
+  window.scrollTo({ top:0, behavior:"smooth" });
+});
+
+render();
+</script>
+</body>
+</html>

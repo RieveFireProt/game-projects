@@ -1,0 +1,1449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cat Warrior Levels</title>
+<style>
+/* ============================================================
+   CAT WARRIOR LEVELS - character sheet dashboard
+   Single-file app. No network, no build step. Open in a browser.
+   ============================================================ */
+
+:root{
+  --stone-0:#0b0d12;
+  --stone-1:#141821;
+  --stone-2:#1d222e;
+  --stone-3:#2a3140;
+  --ink:#e8e2d4;
+  --ink-dim:#a49c8b;
+  --gold:#d4af58;
+  --gold-dim:#8c7333;
+  --gold-bright:#f4d98b;
+  --ice:#8fd4f0;
+  --ice-deep:#2b6f96;
+  --ember:#e2743a;
+  --good:#7fc06a;
+  --bad:#c25a4e;
+  --radius:10px;
+  --serif:'Palatino Linotype','Book Antiqua',Palatino,Georgia,'Times New Roman',serif;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 700px at 50% -10%, #2a3040 0%, transparent 60%),
+    linear-gradient(180deg,#0e111a 0%, #080a0f 100%);
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:var(--serif);
+  min-height:100vh;
+  padding:18px 14px 60px;
+}
+
+/* ---------- shared chrome ---------- */
+.panel{
+  background:linear-gradient(180deg, rgba(32,38,50,.95), rgba(18,22,30,.95));
+  border:1px solid var(--gold-dim);
+  border-radius:var(--radius);
+  box-shadow:0 0 0 1px rgba(0,0,0,.6), 0 10px 30px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);
+  position:relative;
+}
+.panel::before{
+  content:"";position:absolute;inset:4px;border:1px solid rgba(212,175,88,.18);
+  border-radius:6px;pointer-events:none;
+}
+.wrap{max-width:1180px;margin:0 auto}
+
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:.04em}
+.small{font-size:12px}
+.dim{color:var(--ink-dim)}
+.center{text-align:center}
+
+button{
+  font-family:var(--serif);
+  cursor:pointer;
+  border-radius:6px;
+  border:1px solid var(--gold-dim);
+  background:linear-gradient(180deg,#333b4c,#222836);
+  color:var(--ink);
+  padding:7px 12px;
+  font-size:13px;
+  transition:transform .07s ease, filter .15s ease, box-shadow .15s ease;
+}
+button:hover{filter:brightness(1.25);box-shadow:0 0 12px rgba(212,175,88,.25)}
+button:active{transform:translateY(1px)}
+button[disabled]{opacity:.4;cursor:not-allowed;filter:none;box-shadow:none}
+button.gold{background:linear-gradient(180deg,#6b5520,#3d3013);border-color:var(--gold);color:var(--gold-bright)}
+button.ghost{background:transparent}
+button.danger{border-color:#7a3a33;color:#e9a89f}
+button.tiny{padding:3px 8px;font-size:11px}
+
+input,select{
+  font-family:var(--serif);font-size:13px;color:var(--ink);
+  background:#11151d;border:1px solid var(--stone-3);border-radius:5px;padding:6px 8px;
+}
+input:focus,select:focus{outline:none;border-color:var(--gold-dim)}
+
+/* ---------- header ---------- */
+.topbar{
+  display:flex;flex-wrap:wrap;align-items:center;gap:14px;
+  padding:14px 18px;margin-bottom:16px;
+}
+.crest{
+  width:44px;height:44px;flex:0 0 auto;
+  filter:drop-shadow(0 0 6px rgba(212,175,88,.4));
+}
+.title-block{flex:1 1 240px;min-width:200px}
+.title-block h1{
+  font-size:26px;
+  background:linear-gradient(180deg,#f7e6b4,#d4af58 55%,#8c7333 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 2px 10px rgba(0,0,0,.6);
+}
+.title-block .sub{font-size:12px;color:var(--ink-dim);letter-spacing:.16em;text-transform:uppercase;margin-top:3px}
+.topbar-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---------- party quest ---------- */
+.party{
+  padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.party .label{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+.party .qname{font-size:15px;flex:0 0 auto}
+.party .bar-outer{flex:1 1 220px;min-width:180px}
+
+/* ---------- bars ---------- */
+.bar-outer{
+  height:16px;background:#0a0d13;border:1px solid var(--stone-3);border-radius:9px;
+  overflow:hidden;position:relative;box-shadow:inset 0 2px 6px rgba(0,0,0,.8);
+}
+.bar-fill{
+  height:100%;border-radius:8px 0 0 8px;
+  background:linear-gradient(180deg,#f0d68e,#d4af58 45%,#9c7b2c);
+  box-shadow:0 0 10px rgba(212,175,88,.5);
+  transition:width .5s cubic-bezier(.3,1,.4,1);
+  position:relative;
+}
+.bar-fill::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);
+  animation:sheen 2.6s linear infinite;
+}
+@keyframes sheen{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.bar-text{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:11px;letter-spacing:.06em;color:#fff;font-weight:600;
+  text-shadow:0 1px 2px #000, 0 0 5px rgba(0,0,0,.9);
+}
+.bar-outer.ice .bar-fill{background:linear-gradient(180deg,#d6f2ff,#8fd4f0 45%,#2b6f96);box-shadow:0 0 12px rgba(143,212,240,.6)}
+
+/* ---------- character grid ---------- */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+
+.card{padding:16px;overflow:hidden}
+.card.frozen{border-color:var(--ice-deep)}
+.card.frozen::before{border-color:rgba(143,212,240,.25)}
+
+.sheet-top{display:flex;gap:14px;align-items:flex-start}
+
+/* ---------- portrait ---------- */
+.portrait-wrap{
+  position:relative;width:168px;height:168px;flex:0 0 auto;border-radius:8px;overflow:hidden;
+  background:#0a0d13;
+  border:2px solid var(--tier-accent,#8c7333);
+  box-shadow:0 0 20px -4px var(--tier-glow,rgba(212,175,88,.5)), inset 0 0 30px rgba(0,0,0,.7);
+}
+@media (max-width:420px){.portrait-wrap{width:132px;height:132px}}
+.portrait-wrap img,.portrait-wrap svg{width:100%;height:100%;display:block;object-fit:cover}
+.portrait-wrap .corner{
+  position:absolute;width:16px;height:16px;border:2px solid var(--tier-accent,#8c7333);opacity:.9
+}
+.corner.tl{top:3px;left:3px;border-right:0;border-bottom:0}
+.corner.tr{top:3px;right:3px;border-left:0;border-bottom:0}
+.corner.bl{bottom:3px;left:3px;border-right:0;border-top:0}
+.corner.br{bottom:3px;right:3px;border-left:0;border-top:0}
+
+.frozen .portrait-wrap img,.frozen .portrait-wrap svg{filter:grayscale(.55) brightness(.85) hue-rotate(150deg) saturate(1.4)}
+.frost{
+  position:absolute;inset:0;pointer-events:none;display:none;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(214,242,255,.5), transparent 42%),
+    radial-gradient(circle at 82% 78%, rgba(143,212,240,.45), transparent 45%),
+    linear-gradient(140deg, rgba(43,111,150,.45), rgba(10,20,30,.25));
+  mix-blend-mode:screen;
+  animation:frostpulse 4s ease-in-out infinite;
+}
+.frozen .frost{display:block}
+@keyframes frostpulse{0%,100%{opacity:.75}50%{opacity:1}}
+.frost-shards{position:absolute;inset:0;pointer-events:none}
+
+.frozen-banner{
+  position:absolute;left:-30px;right:-30px;top:52%;transform:translateY(-50%) rotate(-8deg);
+  background:linear-gradient(180deg,rgba(214,242,255,.95),rgba(90,160,200,.9));
+  color:#08202e;text-align:center;font-size:15px;font-weight:700;letter-spacing:.3em;
+  padding:4px 0;box-shadow:0 3px 14px rgba(0,0,0,.7);display:none;
+}
+.frozen .frozen-banner{display:block}
+
+/* ---------- identity ---------- */
+.ident{flex:1 1 auto;min-width:0}
+.ident .who{font-size:22px;color:var(--gold-bright);line-height:1.15}
+.ident .cat{font-size:12px;color:var(--ink-dim);font-style:italic;margin-top:1px}
+.rank-title{
+  margin-top:8px;font-size:14px;color:var(--tier-accent,#d4af58);
+  letter-spacing:.05em;line-height:1.25;
+}
+.rank-meta{font-size:11px;color:var(--ink-dim);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+
+.level-row{display:flex;align-items:baseline;gap:8px;margin-top:10px}
+.level-num{
+  font-size:40px;line-height:1;color:var(--gold-bright);
+  text-shadow:0 0 18px rgba(212,175,88,.45), 0 2px 0 #000;
+}
+.frozen .level-num{color:var(--ice);text-shadow:0 0 18px rgba(143,212,240,.5),0 2px 0 #000}
+.level-lab{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim)}
+
+.xp-wrap{margin-top:8px}
+
+/* ---------- chips ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{
+  font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--stone-3);
+  background:#141922;color:var(--ink-dim);letter-spacing:.04em;white-space:nowrap;
+}
+.chip.streak{border-color:#8a5a20;color:#f0b268;background:#241a10}
+.chip.ice{border-color:var(--ice-deep);color:var(--ice);background:#0d1b25}
+.chip.ok{border-color:#3c6b33;color:var(--good);background:#111c0f}
+
+/* ---------- stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.stat{
+  background:#10141c;border:1px solid var(--stone-3);border-radius:6px;padding:7px 4px;text-align:center;
+}
+.stat .g{font-size:15px;line-height:1}
+.stat .v{font-size:19px;color:var(--gold-bright);line-height:1.2}
+.stat .n{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* ---------- gear ---------- */
+.section-head{
+  font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);
+  margin:16px 0 7px;padding-bottom:4px;border-bottom:1px solid rgba(212,175,88,.2);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.gear{display:flex;flex-direction:column;gap:4px}
+.gear-item{
+  font-size:12px;display:flex;gap:8px;align-items:center;
+  padding:4px 8px;background:#10141c;border:1px solid var(--stone-3);border-radius:5px;
+}
+.gear-item .slot{font-size:10px;color:var(--ink-dim);letter-spacing:.1em;text-transform:uppercase;min-width:64px}
+.gear-item.locked{opacity:.42;font-style:italic}
+
+/* ---------- badges ---------- */
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.badge{
+  width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:16px;
+  background:radial-gradient(circle at 35% 30%,#3b4356,#171b25);
+  border:1px solid var(--gold-dim);box-shadow:0 0 10px rgba(212,175,88,.2);
+  cursor:default;
+}
+.badge.locked{opacity:.22;filter:grayscale(1);border-color:var(--stone-3);box-shadow:none}
+
+/* ---------- task board ---------- */
+.task-group{margin-bottom:10px}
+.task-group-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);margin:8px 0 5px}
+.task{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 9px;margin-bottom:4px;border-radius:6px;
+  background:#10141c;border:1px solid var(--stone-3);
+  font-size:13px;transition:background .15s,border-color .15s;
+}
+.task .val{
+  font-size:11px;color:var(--gold);min-width:34px;text-align:right;letter-spacing:.04em;flex:0 0 auto;
+}
+.task .lab{flex:1 1 auto;min-width:0}
+.task.done{background:#0f1a10;border-color:#2f5c2a;color:var(--good)}
+.task.done .val{color:var(--good)}
+.task.pending{background:#1e1a0d;border-color:#7a6320}
+.task .act{flex:0 0 auto;display:flex;gap:4px}
+.task.big{font-size:14px;padding:9px 10px}
+.task.big .val{font-size:13px}
+.tick{color:var(--good);font-size:14px}
+
+/* ---------- freeze panel ---------- */
+.freeze-box{
+  margin-top:12px;padding:11px;border-radius:7px;
+  border:1px solid var(--ice-deep);background:linear-gradient(180deg,rgba(20,45,62,.75),rgba(10,20,28,.75));
+}
+.freeze-box h3{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--ice);margin-bottom:7px}
+.freeze-box .quest{font-size:13px;margin:6px 0;color:var(--ink)}
+.escrow-note{font-size:11px;color:var(--ice);margin-top:6px;line-height:1.45}
+
+/* ---------- parent panel ---------- */
+.parent-box{
+  margin-top:12px;padding:11px;border-radius:7px;
+  border:1px dashed var(--gold-dim);background:rgba(60,48,20,.14);
+}
+.parent-box h3{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.prow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:7px}
+.plabel{
+  font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ice);
+  margin:12px 0 6px;padding-top:8px;border-top:1px solid rgba(143,212,240,.16);
+}
+.plabel:first-of-type{margin-top:4px;padding-top:0;border-top:0}
+.phelp{font-size:11px;color:var(--ink-dim);line-height:1.5;margin:-2px 0 4px}
+.phelp strong{color:var(--ice)}
+.prow input[type=number]{width:76px}
+.prow input[type=text]{flex:1 1 140px;min-width:120px}
+
+/* ---------- log ---------- */
+.log{max-height:150px;overflow-y:auto;font-size:12px}
+.log-row{display:flex;gap:8px;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.log-row .t{color:var(--ink-dim);font-size:10px;min-width:56px}
+.log-row .a{color:var(--gold);min-width:38px;text-align:right}
+.log-row .l{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log::-webkit-scrollbar{width:8px}
+.log::-webkit-scrollbar-thumb{background:var(--stone-3);border-radius:4px}
+
+/* ---------- footer / backup ---------- */
+.footer{margin-top:16px;padding:12px 18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.nag{background:#3a2a10;border:1px solid #8a6a20;color:#f0d08a;padding:8px 14px;border-radius:6px;font-size:13px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.nag.ask{background:#16283a;border-color:var(--ice-deep);color:var(--ice)}
+.pip{
+  display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;
+  border-radius:9px;background:var(--gold-bright);color:#2a2008;
+  font-size:11px;font-weight:700;line-height:1;margin-left:4px;
+}
+
+/* ---------- fx ---------- */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.spark{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--gold-bright);box-shadow:0 0 10px var(--gold);animation:fly 1.1s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+.rankup{
+  position:fixed;left:50%;top:34%;transform:translate(-50%,-50%) scale(.7);
+  z-index:70;text-align:center;pointer-events:none;opacity:0;
+  animation:rankpop 2.9s ease-out forwards;
+  padding:26px 44px;border-radius:14px;
+  background:radial-gradient(ellipse at center, rgba(8,10,16,.97) 0%, rgba(8,10,16,.92) 55%, rgba(8,10,16,0) 100%);
+}
+.rankup .r1{font-size:15px;letter-spacing:.4em;color:var(--gold);text-transform:uppercase}
+.rankup .r2{font-size:38px;color:var(--gold-bright);text-shadow:0 0 30px rgba(212,175,88,.8),0 3px 0 #000;margin-top:6px}
+.rankup .r3{font-size:14px;color:var(--ink);margin-top:8px;letter-spacing:.1em}
+@keyframes rankpop{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}
+  12%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}
+  20%{transform:translate(-50%,-50%) scale(1)}
+  80%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-58%) scale(1)}
+}
+.shatter{position:absolute;inset:0;pointer-events:none;z-index:5}
+.shard{position:absolute;background:linear-gradient(140deg,rgba(230,248,255,.95),rgba(120,190,225,.5));animation:shardfly .85s ease-out forwards}
+@keyframes shardfly{to{transform:translate(var(--dx),var(--dy)) rotate(var(--rot));opacity:0}}
+
+/* ---------- modal ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(4,6,10,.82);display:grid;place-items:center;z-index:80;padding:20px}
+.modal{max-width:420px;width:100%;padding:22px}
+.modal h2{font-size:17px;color:var(--gold-bright);margin-bottom:12px}
+.modal .row{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap}
+.pin-input{font-size:26px;letter-spacing:.5em;text-align:center;width:100%;padding:10px}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app"></div>
+<div id="fx"></div>
+
+<script>
+"use strict";
+
+/* ============================================================================
+   1. CONFIGURATION  --  edit this block to change the game
+   ============================================================================ */
+
+const TIER_SIZE = 500;          // levels per rank tier
+const THAW_GOAL_DEFAULT = 20;   // levels that must be earned to break a freeze
+const STREAK_BONUS_EVERY = 5;   // every N days in a row...
+const STREAK_BONUS = 25;        // ...award this bonus
+const PARTY_GOAL_DEFAULT = 700; // combined levels per week for the party quest
+
+const CHARACTERS = [
+  {
+    id:"jacob", name:"Jacob", cat:"Stormwhisker of the Blue Banner", portrait:"assets/jacob.png",
+    art:{ fur:"#8b8074", furDark:"#584f46", furLight:"#cdc2b1", eye:"#2fc0ef",
+          metal:"#b9c6d3", metalDark:"#5d6a79", gold:"#d9b96a", accent:"#2f63ad" }
+  },
+  {
+    id:"isaac", name:"Isaac", cat:"Emberpaw of the Silver Guard", portrait:"assets/isaac.png",
+    art:{ fur:"#b8834e", furDark:"#7a5230", furLight:"#e4b784", eye:"#c2d94f",
+          metal:"#c9d4de", metalDark:"#66727f", gold:"#cfae63", accent:"#3d7ea3" }
+  }
+];
+
+// stat: which stat this task trains. MIGHT / SPEED / FOCUS / HEART
+const AWARDS = {
+  daily: [
+    { id:"followed", label:"Followed Directions all Day", value:50, stat:"MIGHT" }
+  ],
+  milestone: [
+    { id:"am_chores", label:"All morning chores complete by 7:30am", value:10, stat:"SPEED" },
+    { id:"pm_chores", label:"Evening chores and showers complete by 6:30pm", value:10, stat:"SPEED" }
+  ],
+  quick: [
+    { id:"dishes", label:"Put dishes in the sink",            value:2, stat:"MIGHT" },
+    { id:"feedcat", label:"Feed the cat",                     value:2, stat:"HEART" },
+    { id:"read",    label:"Read a chapter of a chapter book", value:2, stat:"FOCUS" },
+    { id:"board",   label:"Play a physical board game",       value:2, stat:"HEART" },
+    { id:"bedroom", label:"Clean up bedroom",                 value:2, stat:"MIGHT" }
+  ]
+};
+
+const TIERS = [
+  { title:"Kitten Recruit",                accent:"#9aa4b2", helm:"none",    gear:["Scavenged leather vest","Wooden practice blade"] },
+  { title:"Squire of the Hearth",          accent:"#c08a4a", helm:"band",    gear:["Bronze pauldron","Hearth-iron shortsword"] },
+  { title:"Whiskerguard",                  accent:"#8fb4d0", helm:"band",    gear:["Iron chainmail","Guard's round shield"] },
+  { title:"Clawblade",                     accent:"#7fc06a", helm:"circlet", gear:["Twin claw daggers","Ranger's cloak"] },
+  { title:"Ironpaw Warrior",               accent:"#c25a4e", helm:"circlet", gear:["Ironpaw greatsword","Studded warplate"] },
+  { title:"Knight of the Ninth Tail",      accent:"#b9c6d3", helm:"helm",    gear:["Knight's helm","Sigil of the Ninth Tail"] },
+  { title:"Frostmane Captain",             accent:"#8fd4f0", helm:"helm",    gear:["Frostmane cloak","Captain's warhorn"] },
+  { title:"Warden of the Emberfields",     accent:"#e2743a", helm:"helm",    gear:["Emberforged plate","Warden's greatshield"] },
+  { title:"Champion of the Cat Legion",    accent:"#d4af58", helm:"crown",   gear:["Legion battle banner","Champion's blade"] },
+  { title:"Grand Commander of the Legion", accent:"#f4d98b", helm:"crown",   gear:["Crown of the Ninth Star","Staff of the Ninth Star"] }
+];
+
+const BADGES = [
+  { id:"first_rank", icon:"⭐", name:"First Promotion",   test:c => tierIndex(c.level) >= 1 },
+  { id:"streak5",    icon:"🔥", name:"5 Day Streak",     test:c => c.bestStreak >= 5 },
+  { id:"streak10",   icon:"☄️", name:"10 Day Streak",    test:c => c.bestStreak >= 10 },
+  { id:"tier3",      icon:"🛡️", name:"Reached Whiskerguard", test:c => tierIndex(c.level) >= 2 },
+  { id:"tier6",      icon:"⚔️", name:"Reached Knighthood",   test:c => tierIndex(c.level) >= 5 },
+  { id:"tier10",     icon:"👑", name:"Grand Commander",  test:c => tierIndex(c.level) >= 9 },
+  { id:"helper",     icon:"🧹", name:"100 Small Deeds",  test:c => totalQuickCount(c) >= 100 },
+  { id:"icebreaker", icon:"❄️", name:"Broke the Ice",    test:c => c.thawCount >= 1 }
+];
+
+const STAT_DEFS = [
+  { key:"MIGHT", glyph:"⚔", label:"Might" },
+  { key:"SPEED", glyph:"⚡", label:"Speed" },
+  { key:"FOCUS", glyph:"◈", label:"Focus" },
+  { key:"HEART", glyph:"♥", label:"Heart" }
+];
+
+const SAVE_KEY = "catWarriorLevels.v1";
+
+/* ============================================================================
+   2. STATE
+   ============================================================================ */
+
+let state = null;
+let parentMode = false;
+let portraitOk = {};   // id -> bool, set after probing image files
+let modal = null;      // {type,...}
+
+function allTasks(){ return [...AWARDS.daily, ...AWARDS.milestone, ...AWARDS.quick]; }
+function taskById(id){ return allTasks().find(t => t.id === id) || null; }
+
+function newCharacter(def){
+  return {
+    id:def.id,
+    level:0,
+    counts:{},                 // lifetime task counts
+    today:{ date:today(), claimed:{} },
+    pending:[],                // kid-requested, awaiting parent approval
+    streak:0, bestStreak:0, lastDailyDate:null,
+    thawCount:0,
+    frozen:{ active:false, escrow:0, goal:THAW_GOAL_DEFAULT, quest:"", since:null },
+    badges:[],
+    log:[]
+  };
+}
+
+function freshState(){
+  const chars = {};
+  CHARACTERS.forEach(d => { chars[d.id] = newCharacter(d); });
+  return {
+    version:1,
+    pin:"1234",
+    sound:true,
+    lastSeen:today(),
+    lastBackup:null,
+    party:{ name:"Defend the Hearth Keep", goal:PARTY_GOAL_DEFAULT, progress:0, weekStart:weekStart() },
+    chars
+  };
+}
+
+function load(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return freshState();
+    const s = JSON.parse(raw);
+    return migrate(s);
+  }catch(err){
+    console.warn("Save unreadable, starting fresh.", err);
+    return freshState();
+  }
+}
+
+// Tolerant merge so adding characters or fields later never wipes progress.
+function migrate(s){
+  const base = freshState();
+  const out = Object.assign({}, base, s);
+  out.party = Object.assign({}, base.party, s.party || {});
+  out.chars = out.chars || {};
+  CHARACTERS.forEach(d => {
+    const c = Object.assign(newCharacter(d), out.chars[d.id] || {});
+    c.frozen = Object.assign(newCharacter(d).frozen, (out.chars[d.id] || {}).frozen || {});
+    c.today  = Object.assign({date:today(),claimed:{}}, (out.chars[d.id] || {}).today || {});
+    c.counts = c.counts || {};
+    c.pending = c.pending || [];
+    c.badges = c.badges || [];
+    c.log = c.log || [];
+    out.chars[d.id] = c;
+  });
+  return out;
+}
+
+function save(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+  catch(err){ console.error("Could not save.", err); }
+}
+
+/* ============================================================================
+   3. DATE HELPERS
+   ============================================================================ */
+
+function today(d){
+  const t = d || new Date();
+  return t.getFullYear() + "-" + pad(t.getMonth()+1) + "-" + pad(t.getDate());
+}
+function pad(n){ return n < 10 ? "0"+n : ""+n; }
+function yesterdayStr(){
+  const d = new Date(); d.setDate(d.getDate()-1); return today(d);
+}
+function weekStart(){
+  const d = new Date();
+  const dow = (d.getDay() + 6) % 7;    // Monday = 0
+  d.setDate(d.getDate() - dow);
+  return today(d);
+}
+function daysBetween(a,b){
+  if(!a || !b) return Infinity;
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+function clockOf(ts){
+  const d = new Date(ts);
+  let h = d.getHours(); const m = pad(d.getMinutes());
+  const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12;
+  return h + ":" + m + ap;
+}
+
+/* ============================================================================
+   4. RANK / STAT MATH
+   ============================================================================ */
+
+function tierIndex(level){ return Math.min(Math.floor(level / TIER_SIZE), TIERS.length - 1); }
+function stars(level){ return Math.max(0, Math.floor(level / TIER_SIZE) - (TIERS.length - 1)); }
+function tierOf(level){ return TIERS[tierIndex(level)]; }
+function intoTier(level){ return level % TIER_SIZE; }
+
+function statValue(c, key){
+  let n = 5;
+  allTasks().forEach(t => { if(t.stat === key) n += (c.counts[t.id] || 0); });
+  if(key === "MIGHT") n += Math.floor(c.level / 200);
+  return n;
+}
+function totalQuickCount(c){
+  return AWARDS.quick.reduce((n,t) => n + (c.counts[t.id] || 0), 0);
+}
+
+/* ============================================================================
+   5. PORTRAIT ART
+   Falls back to a drawn SVG cat warrior when assets/<id>.png is absent.
+   The drawn version reacts to rank tier (helm, accent, aura).
+   ============================================================================ */
+
+function catSvg(def, level){
+  const a = def.art;
+  const tier = tierOf(level);
+  const ti = tierIndex(level);
+  const helm = tier.helm;
+  const acc = tier.accent;
+
+  // Headgear by tier. The brow band sits on the arc across the forehead (y ~ 138-166).
+  const helmet = {
+    none: "",
+    band: `<path d="M128 166 q72 -34 144 0 l0 15 q-72 -30 -144 0 z" fill="url(#steel-${def.id})" stroke="${a.metalDark}" stroke-width="2.5"/>`,
+    circlet: `<path d="M128 166 q72 -34 144 0 l0 14 q-72 -30 -144 0 z" fill="${a.gold}" stroke="#6b5520" stroke-width="2.5"/>
+              <path d="M186 150 l14 -18 l14 18 l-14 12 z" fill="${a.gold}" stroke="#6b5520" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="200" cy="152" r="7" fill="${acc}" stroke="#6b5520" stroke-width="1.5"/>`,
+    helm: `<path d="M124 168 q76 -38 152 0 l0 17 q-76 -32 -152 0 z" fill="url(#steel-${def.id})" stroke="${a.metalDark}" stroke-width="2.5"/>
+           <path d="M192 148 l8 -16 l8 16 l0 46 q-8 7 -16 0 z" fill="url(#steel-${def.id})" stroke="${a.metalDark}" stroke-width="2" stroke-linejoin="round"/>
+           <circle cx="200" cy="156" r="9" fill="${acc}" stroke="${a.metalDark}" stroke-width="2"/>
+           <path d="M138 176 q10 20 6 40 M262 176 q-10 20 -6 40" stroke="${a.metalDark}" stroke-width="3" fill="none" opacity=".7"/>`,
+    crown: `<path d="M126 166 q74 -34 148 0 l0 15 q-74 -30 -148 0 z" fill="${a.gold}" stroke="#6b5520" stroke-width="2.5"/>
+            <path d="M156 150 l10 -38 l16 28 l18 -42 l18 42 l16 -28 l10 38 z" fill="${a.gold}" stroke="#6b5520" stroke-width="2.5" stroke-linejoin="round"/>
+            <circle cx="200" cy="118" r="8" fill="${acc}" stroke="#6b5520" stroke-width="2"/>
+            <circle cx="166" cy="126" r="4.5" fill="${acc}"/><circle cx="234" cy="126" r="4.5" fill="${acc}"/>`
+  }[helm] || "";
+
+  // Rank 1 wears scavenged leather rather than plate, so the jump to Rank 2 reads instantly.
+  const leather = ti === 0;
+  const mt  = leather ? "#8a6a45" : a.metal;
+  const mtD = leather ? "#4b3722" : a.metalDark;
+
+  // Armor detail grows with rank.
+  const trim = ti >= 2
+    ? `<path d="M112 400 q6 -58 88 -58 q82 0 88 58" fill="none" stroke="${acc}" stroke-width="5" opacity=".9"/>`
+    : "";
+  const rivets = ti >= 3
+    ? `<circle cx="60" cy="330" r="5" fill="${a.gold}"/><circle cx="104" cy="316" r="5" fill="${a.gold}"/>
+       <circle cx="340" cy="330" r="5" fill="${a.gold}"/><circle cx="296" cy="316" r="5" fill="${a.gold}"/>`
+    : "";
+  const chestSigil = ti >= 5
+    ? `<path d="M200 348 l0 48 M178 366 l44 0" stroke="${a.gold}" stroke-width="10" stroke-linecap="round" opacity=".95"/>`
+    : "";
+  // Drawn wide enough to clear the pauldrons, or it never shows.
+  const cape = ti >= 6
+    ? `<path d="M14 400 q-6 -92 92 -132 l22 30 q-78 40 -70 102 z" fill="${acc}" opacity=".7"/>
+       <path d="M386 400 q6 -92 -92 -132 l-22 30 q78 40 70 102 z" fill="${acc}" opacity=".7"/>`
+    : "";
+  const aura = ti >= 7
+    ? `<circle cx="200" cy="196" r="150" fill="none" stroke="${acc}" stroke-opacity=".35" stroke-width="3"
+               stroke-dasharray="6 12"/>`
+    : "";
+  const spikes = ti >= 8
+    ? `<path d="M50 318 l-20 -28 l34 12 z" fill="${a.gold}" stroke="#6b5520" stroke-width="2" stroke-linejoin="round"/>
+       <path d="M350 318 l20 -28 l-34 12 z" fill="${a.gold}" stroke="#6b5520" stroke-width="2" stroke-linejoin="round"/>`
+    : "";
+
+  return `<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cat warrior portrait">
+  <defs>
+    <radialGradient id="bg-${def.id}" cx="50%" cy="36%" r="74%">
+      <stop offset="0%" stop-color="${acc}" stop-opacity=".40"/>
+      <stop offset="55%" stop-color="#131824"/>
+      <stop offset="100%" stop-color="#070a10"/>
+    </radialGradient>
+    <linearGradient id="steel-${def.id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${mt}"/>
+      <stop offset="55%" stop-color="${mt}"/>
+      <stop offset="100%" stop-color="${mtD}"/>
+    </linearGradient>
+    <radialGradient id="face-${def.id}" cx="50%" cy="38%" r="66%">
+      <stop offset="0%" stop-color="${a.furLight}"/><stop offset="100%" stop-color="${a.fur}"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="400" height="400" fill="url(#bg-${def.id})"/>
+  <circle cx="200" cy="196" r="128" fill="none" stroke="${acc}" stroke-opacity=".20" stroke-width="2"/>
+  <circle cx="200" cy="196" r="140" fill="none" stroke="${acc}" stroke-opacity=".10" stroke-width="1"/>
+  ${aura}${cape}
+
+  <!-- shoulders and breastplate -->
+  <path d="M34 400 q6 -82 80 -104 q86 -24 172 0 q74 22 80 104 z"
+        fill="url(#steel-${def.id})" stroke="${mtD}" stroke-width="3"/>
+  <path d="M112 400 q6 -58 88 -58 q82 0 88 58 z" fill="${a.accent}" stroke="${mtD}" stroke-width="2.5"/>
+  ${trim}${chestSigil}
+  <ellipse cx="80" cy="342" rx="50" ry="38" fill="url(#steel-${def.id})" stroke="${mtD}" stroke-width="3"/>
+  <ellipse cx="320" cy="342" rx="50" ry="38" fill="url(#steel-${def.id})" stroke="${mtD}" stroke-width="3"/>
+  <path d="M44 336 q36 -28 72 -2 M356 336 q-36 -28 -72 -2"
+        stroke="${mt}" stroke-width="3" fill="none" opacity=".8"/>
+  ${rivets}${spikes}
+  <!-- gorget -->
+  <ellipse cx="200" cy="326" rx="62" ry="24" fill="url(#steel-${def.id})" stroke="${mtD}" stroke-width="2.5"/>
+  <!-- neck ruff -->
+  <ellipse cx="200" cy="304" rx="78" ry="32" fill="${a.fur}"/>
+  <ellipse cx="200" cy="298" rx="64" ry="24" fill="${a.furLight}" opacity=".5"/>
+
+  <!-- ears (drawn behind the head so only the tips show) -->
+  <path d="M120 174 L98 60 L188 124 z" fill="${a.fur}" stroke="${a.furDark}" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M280 174 L302 60 L212 124 z" fill="${a.fur}" stroke="${a.furDark}" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M128 162 L112 86 L172 128 z" fill="#c98d8d" opacity=".8"/>
+  <path d="M272 162 L288 86 L228 128 z" fill="#c98d8d" opacity=".8"/>
+
+  <!-- head -->
+  <ellipse cx="200" cy="204" rx="86" ry="76" fill="url(#face-${def.id})" stroke="${a.furDark}" stroke-width="3"/>
+  <!-- cheek fur tufts -->
+  <path d="M118 216 l-16 8 l16 6 l-14 12 l18 2 M282 216 l16 8 l-16 6 l14 12 l-18 2"
+        fill="none" stroke="${a.fur}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- tabby stripes -->
+  <path d="M200 134 l-11 30 M200 134 l11 30" stroke="${a.furDark}" stroke-width="7" stroke-linecap="round" opacity=".7"/>
+  <path d="M150 154 q14 16 18 34 M250 154 q-14 16 -18 34" stroke="${a.furDark}" stroke-width="6" stroke-linecap="round" fill="none" opacity=".55"/>
+  <path d="M120 214 q22 4 34 2 M280 214 q-22 4 -34 2" stroke="${a.furDark}" stroke-width="6" stroke-linecap="round" fill="none" opacity=".45"/>
+
+  ${helmet}
+
+  <!-- eyes -->
+  <ellipse cx="164" cy="212" rx="24" ry="21" fill="#fbf8f2" opacity=".95"/>
+  <ellipse cx="236" cy="212" rx="24" ry="21" fill="#fbf8f2" opacity=".95"/>
+  <circle cx="164" cy="212" r="16" fill="${a.eye}"/>
+  <circle cx="236" cy="212" r="16" fill="${a.eye}"/>
+  <ellipse cx="164" cy="212" rx="6" ry="15" fill="#080b10"/>
+  <ellipse cx="236" cy="212" rx="6" ry="15" fill="#080b10"/>
+  <circle cx="157" cy="204" r="5" fill="#fff" opacity=".95"/>
+  <circle cx="229" cy="204" r="5" fill="#fff" opacity=".95"/>
+  <path d="M140 192 q24 -12 46 -3 M260 192 q-24 -12 -46 -3"
+        stroke="${a.furDark}" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- muzzle -->
+  <ellipse cx="182" cy="254" rx="25" ry="19" fill="${a.furLight}" opacity=".85"/>
+  <ellipse cx="218" cy="254" rx="25" ry="19" fill="${a.furLight}" opacity=".85"/>
+  <path d="M188 240 l24 0 l-12 13 z" fill="#e08a8a" stroke="${a.furDark}" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M200 254 l0 9 M200 263 q-13 11 -22 1 M200 263 q13 11 22 1"
+        stroke="${a.furDark}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- whiskers -->
+  <g stroke="${a.furLight}" stroke-width="2.5" stroke-linecap="round" opacity=".85" fill="none">
+    <path d="M156 250 q-48 -10 -70 -22"/><path d="M156 258 q-50 2 -72 0"/><path d="M156 266 q-46 12 -64 24"/>
+    <path d="M244 250 q48 -10 70 -22"/><path d="M244 258 q50 2 72 0"/><path d="M244 266 q46 12 64 24"/>
+  </g>
+</svg>`;
+}
+
+function portraitHtml(def, level){
+  if(portraitOk[def.id]) {
+    return '<img src="' + def.portrait + '" alt="' + esc(def.name) + ' the cat warrior">';
+  }
+  return catSvg(def, level);
+}
+
+function probePortraits(){
+  return Promise.all(CHARACTERS.map(def => new Promise(res => {
+    const im = new Image();
+    im.onload  = () => { portraitOk[def.id] = true;  res(); };
+    im.onerror = () => { portraitOk[def.id] = false; res(); };
+    im.src = def.portrait;
+  })));
+}
+
+/* ============================================================================
+   6. DAY / WEEK ROLLOVER
+   ============================================================================ */
+
+function rollover(){
+  const t = today();
+  if(state.lastSeen === t) return false;
+
+  CHARACTERS.forEach(def => {
+    const c = state.chars[def.id];
+    // A freeze never survives the night. Escrow is released, not lost.
+    if(c.frozen.active) thawCharacter(def.id, "Thawed automatically at the start of a new day", true);
+    c.today = { date:t, claimed:{} };
+    c.pending = [];
+    // Streak breaks if the daily award was missed yesterday.
+    if(c.lastDailyDate && daysBetween(c.lastDailyDate, t) > 1) c.streak = 0;
+  });
+
+  if(state.party.weekStart !== weekStart()){
+    state.party.weekStart = weekStart();
+    state.party.progress = 0;
+  }
+  state.lastSeen = t;
+  save();
+  return true;
+}
+
+/* ============================================================================
+   7. ACTIONS
+   ============================================================================ */
+
+function pushLog(c, entry){
+  c.log.unshift(entry);
+  if(c.log.length > 60) c.log.length = 60;
+}
+
+/**
+ * Core award. If the character is frozen the levels go to escrow instead of
+ * the level total, and count toward breaking the freeze. Nothing is ever lost.
+ */
+function award(charId, amount, label, taskId){
+  const c = state.chars[charId];
+  const beforeTier = tierIndex(c.level);
+  const frozen = c.frozen.active;
+
+  if(frozen){
+    c.frozen.escrow += amount;
+  }else{
+    c.level = Math.max(0, c.level + amount);
+  }
+  if(taskId) c.counts[taskId] = (c.counts[taskId] || 0) + 1;
+  if(amount > 0) state.party.progress += amount;
+
+  pushLog(c, { id:uid(), ts:Date.now(), label, amount, mode:frozen ? "escrow" : "level", taskId:taskId||null });
+
+  if(frozen && !c.frozen.quest && c.frozen.escrow >= c.frozen.goal){
+    thawCharacter(charId, "Earned " + c.frozen.escrow + " levels and broke the ice");
+    return;
+  }
+
+  if(!frozen){
+    const afterTier = tierIndex(c.level);
+    if(afterTier > beforeTier){ rankUpFx(charId, afterTier); sound("rankup"); }
+    else if(amount > 0){ sound("ding"); }
+  }else{
+    sound("muffled");
+  }
+  checkBadges(c);
+  save(); render();
+}
+
+function claimTask(charId, taskId){
+  const c = state.chars[charId];
+  const t = taskById(taskId);
+  if(!t || c.today.claimed[taskId]) return;
+
+  c.today.claimed[taskId] = true;
+  award(charId, t.value, t.label, taskId);
+
+  // Daily award also drives the streak.
+  if(t.id === AWARDS.daily[0].id){
+    const y = yesterdayStr();
+    c.streak = (c.lastDailyDate === y) ? c.streak + 1 : 1;
+    c.lastDailyDate = today();
+    c.bestStreak = Math.max(c.bestStreak, c.streak);
+    if(c.streak > 0 && c.streak % STREAK_BONUS_EVERY === 0){
+      award(charId, STREAK_BONUS, c.streak + "-day streak bonus", null);
+    }
+  }
+  checkBadges(c);
+  save(); render();
+}
+
+function requestTask(charId, taskId){
+  const c = state.chars[charId];
+  if(c.today.claimed[taskId]) return;
+  if(c.pending.some(p => p.taskId === taskId)) return;
+  c.pending.push({ taskId, ts:Date.now() });
+  sound("request");
+  save(); render();
+}
+
+function resolveRequest(charId, taskId, approve){
+  const c = state.chars[charId];
+  c.pending = c.pending.filter(p => p.taskId !== taskId);
+  if(approve) claimTask(charId, taskId);
+  else { save(); render(); }
+}
+
+function freezeCharacter(charId){
+  const c = state.chars[charId];
+  if(c.frozen.active) return;
+  c.frozen = { active:true, escrow:0, goal:THAW_GOAL_DEFAULT, quest:"", since:Date.now() };
+  pushLog(c, { id:uid(), ts:Date.now(), label:"FROZEN - the day stopped moving", amount:0, mode:"freeze" });
+  sound("freeze");
+  save(); render();
+}
+
+function thawCharacter(charId, reason, quiet){
+  const c = state.chars[charId];
+  if(!c.frozen.active) return;
+  const released = c.frozen.escrow;
+  const beforeTier = tierIndex(c.level);
+  c.level += released;
+  c.thawCount += 1;
+  c.frozen = { active:false, escrow:0, goal:THAW_GOAL_DEFAULT, quest:"", since:null };
+  pushLog(c, { id:uid(), ts:Date.now(), label:(reason || "Unfrozen") + " - released " + released + " levels", amount:released, mode:"thaw" });
+  checkBadges(c);
+  if(!quiet){
+    shatterFx(charId);
+    sound("thaw");
+    const afterTier = tierIndex(c.level);
+    if(afterTier > beforeTier) setTimeout(() => rankUpFx(charId, afterTier), 700);
+  }
+  save(); render();
+}
+
+function undoLog(charId, entryId){
+  const c = state.chars[charId];
+  const i = c.log.findIndex(e => e.id === entryId);
+  if(i < 0) return;
+  const e = c.log[i];
+  if(e.mode === "level")  c.level = Math.max(0, c.level - e.amount);
+  if(e.mode === "escrow") c.frozen.escrow = Math.max(0, c.frozen.escrow - e.amount);
+  if(e.mode === "thaw" || e.mode === "freeze") return; // not undoable
+  if(e.taskId){
+    c.counts[e.taskId] = Math.max(0, (c.counts[e.taskId] || 0) - 1);
+    delete c.today.claimed[e.taskId];
+    // Undoing the daily award has to walk the streak back too.
+    if(e.taskId === AWARDS.daily[0].id && c.lastDailyDate === today()){
+      c.streak = Math.max(0, c.streak - 1);
+      c.lastDailyDate = c.streak > 0 ? yesterdayStr() : null;
+    }
+  }
+  state.party.progress = Math.max(0, state.party.progress - e.amount);
+  c.log.splice(i,1);
+  save(); render();
+}
+
+function checkBadges(c){
+  BADGES.forEach(b => {
+    if(!c.badges.includes(b.id) && b.test(c)) c.badges.push(b.id);
+  });
+}
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+/* ============================================================================
+   8. EFFECTS  (particles, rank-up banner, sound)
+   ============================================================================ */
+
+function rankUpFx(charId, tierIdx){
+  const el = document.createElement("div");
+  el.className = "rankup";
+  const def = CHARACTERS.find(d => d.id === charId);
+  el.innerHTML = '<div class="r1">Rank Up</div>' +
+                 '<div class="r2">' + esc(TIERS[tierIdx].title) + '</div>' +
+                 '<div class="r3">' + esc(def.name) + ' has earned a new title</div>';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+  burst(window.innerWidth/2, window.innerHeight*0.34, 34, "#f4d98b");
+}
+
+function burst(x, y, n, color){
+  const fx = document.getElementById("fx");
+  for(let i=0;i<n;i++){
+    const s = document.createElement("div");
+    s.className = "spark";
+    const ang = Math.random()*Math.PI*2, dist = 60 + Math.random()*190;
+    s.style.left = x + "px"; s.style.top = y + "px";
+    s.style.background = color; s.style.boxShadow = "0 0 10px " + color;
+    s.style.setProperty("--dx", Math.cos(ang)*dist + "px");
+    s.style.setProperty("--dy", Math.sin(ang)*dist + "px");
+    s.style.animationDelay = (Math.random()*0.18) + "s";
+    fx.appendChild(s);
+    setTimeout(() => s.remove(), 1400);
+  }
+}
+
+function shatterFx(charId){
+  const wrap = document.querySelector('[data-portrait="' + charId + '"]');
+  if(!wrap) return;
+  const layer = document.createElement("div");
+  layer.className = "shatter";
+  for(let i=0;i<26;i++){
+    const sh = document.createElement("div");
+    sh.className = "shard";
+    const w = 6 + Math.random()*18;
+    sh.style.width = w + "px";
+    sh.style.height = (w * (0.6 + Math.random())) + "px";
+    sh.style.left = (Math.random()*100) + "%";
+    sh.style.top  = (Math.random()*100) + "%";
+    sh.style.clipPath = "polygon(50% 0%, 100% 62%, 72% 100%, 12% 84%)";
+    const ang = Math.random()*Math.PI*2, dist = 50 + Math.random()*130;
+    sh.style.setProperty("--dx", Math.cos(ang)*dist + "px");
+    sh.style.setProperty("--dy", Math.sin(ang)*dist + "px");
+    sh.style.setProperty("--rot", (Math.random()*720-360) + "deg");
+    layer.appendChild(sh);
+  }
+  wrap.appendChild(layer);
+  const r = wrap.getBoundingClientRect();
+  burst(r.left + r.width/2, r.top + r.height/2, 20, "#bfe9ff");
+  setTimeout(() => layer.remove(), 1000);
+}
+
+let audioCtx = null;
+function tone(freq, start, dur, type, gainPeak){
+  if(!audioCtx) return;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type || "triangle";
+  o.frequency.value = freq;
+  const t0 = audioCtx.currentTime + start;
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gainPeak || 0.16, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function sound(kind){
+  if(!state.sound) return;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === "suspended") audioCtx.resume();
+  }catch(err){ return; }
+  if(kind === "ding"){ tone(880,0,.14); tone(1320,.06,.16); }
+  else if(kind === "rankup"){ [523,659,784,1047,1319].forEach((f,i) => tone(f, i*0.09, .38, "triangle", .2)); }
+  else if(kind === "freeze"){ [520,410,300,220].forEach((f,i) => tone(f, i*0.10, .42, "sine", .17)); }
+  else if(kind === "thaw"){ [300,520,760,1010,1300].forEach((f,i) => tone(f, i*0.06, .3, "sine", .17)); }
+  else if(kind === "muffled"){ tone(300,0,.2,"sine",.1); }
+  else if(kind === "request"){ tone(660,0,.1,"sine",.1); tone(760,.08,.12,"sine",.1); }
+}
+
+/* ============================================================================
+   9. RENDER
+   ============================================================================ */
+
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, ch => (
+    {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]
+  ));
+}
+
+function bar(pct, text, ice){
+  const p = Math.max(0, Math.min(100, pct));
+  return '<div class="bar-outer' + (ice ? " ice" : "") + '">' +
+           '<div class="bar-fill" style="width:' + p + '%"></div>' +
+           '<div class="bar-text">' + esc(text) + '</div>' +
+         '</div>';
+}
+
+function crestSvg(){
+  return `<svg class="crest" viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M32 4 L58 12 v22 c0 14 -12 22 -26 26 C18 56 6 48 6 34 V12 z"
+          fill="#1c2130" stroke="#d4af58" stroke-width="2.5"/>
+    <path d="M18 30 l4 -18 l10 8 l10 -8 l4 18 z" fill="#d4af58"/>
+    <circle cx="26" cy="36" r="2.6" fill="#8fd4f0"/><circle cx="38" cy="36" r="2.6" fill="#8fd4f0"/>
+    <path d="M32 40 l0 4 M32 44 q-5 4 -8 0 M32 44 q5 4 8 0" stroke="#d4af58" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function pendingTotal(){
+  return CHARACTERS.reduce((n,d) => n + state.chars[d.id].pending.length, 0);
+}
+
+function renderTopbar(){
+  const backupDays = state.lastBackup ? daysBetween(state.lastBackup, today()) : Infinity;
+  const nag = (backupDays > 7)
+    ? '<div class="nag"><span>&#9888; No backup saved ' +
+      (state.lastBackup ? "in " + backupDays + " days" : "yet") +
+      '. If the browser data gets cleared, all levels are lost.</span>' +
+      '<button class="gold tiny" data-act="backup">Save Backup Now</button></div>'
+    : "";
+
+  // Requests are invisible from the locked view unless we say so out loud.
+  const pend = pendingTotal();
+  const ask = (!parentMode && pend > 0)
+    ? '<div class="nag ask"><span>&#9873; ' + pend + ' deed' + (pend === 1 ? "" : "s") +
+      ' waiting to be approved. A parent has to unlock to award the levels.</span>' +
+      '<button class="gold tiny" data-act="unlock">Unlock Parent Mode</button></div>'
+    : "";
+
+  const lockBtn = parentMode
+    ? '<button class="gold" data-act="lock">🔓 Parent Mode &mdash; Lock</button>'
+    : '<button data-act="unlock"' + (pend > 0 ? ' class="gold"' : '') + '>🔒 Parent Mode' +
+      (pend > 0 ? ' <span class="pip">' + pend + '</span>' : '') + '</button>';
+
+  return nag + ask +
+  '<div class="panel topbar">' +
+    crestSvg() +
+    '<div class="title-block"><h1>Cat Warrior Levels</h1>' +
+      '<div class="sub">House of the Ninth Tail &middot; ' + esc(prettyDate()) + '</div></div>' +
+    '<div class="topbar-actions">' +
+      '<button data-act="toggle-sound" title="Sound effects">' + (state.sound ? "♪ Sound On" : "♪ Sound Off") + '</button>' +
+      lockBtn +
+    '</div>' +
+  '</div>';
+}
+
+function prettyDate(){
+  return new Date().toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
+}
+
+function renderParty(){
+  const p = state.party;
+  const pct = p.goal > 0 ? (p.progress / p.goal) * 100 : 0;
+  const done = p.progress >= p.goal;
+  return '<div class="panel party">' +
+    '<div class="label">Party Quest</div>' +
+    '<div class="qname">' + esc(p.name) + (done ? ' <span class="chip ok">Complete!</span>' : '') + '</div>' +
+    '<div class="bar-outer" style="flex:1 1 220px;min-width:180px">' +
+      '<div class="bar-fill" style="width:' + Math.min(100,pct) + '%"></div>' +
+      '<div class="bar-text">' + p.progress + ' / ' + p.goal + ' this week</div>' +
+    '</div>' +
+    (parentMode
+      ? '<div class="prow" style="margin:0">' +
+          '<input type="text" id="party-name" value="' + esc(p.name) + '" placeholder="Quest name">' +
+          '<input type="number" id="party-goal" value="' + p.goal + '" min="1">' +
+          '<button class="tiny" data-act="save-party">Save</button>' +
+        '</div>'
+      : '') +
+  '</div>';
+}
+
+function renderCharacter(def){
+  const c = state.chars[def.id];
+  const tier = tierOf(c.level);
+  const ti = tierIndex(c.level);
+  const st = stars(c.level);
+  const frozen = c.frozen.active;
+  const pct = (intoTier(c.level) / TIER_SIZE) * 100;
+
+  const styleVars = '--tier-accent:' + tier.accent + ';--tier-glow:' + tier.accent + '55';
+
+  // --- portrait + identity ---
+  let html = '<div class="panel card' + (frozen ? " frozen" : "") + '" style="' + styleVars + '">';
+  html += '<div class="sheet-top">';
+  html +=   '<div class="portrait-wrap" data-portrait="' + def.id + '">' +
+              portraitHtml(def, c.level) +
+              '<div class="frost"></div><div class="frozen-banner">FROZEN</div>' +
+              '<span class="corner tl"></span><span class="corner tr"></span>' +
+              '<span class="corner bl"></span><span class="corner br"></span>' +
+            '</div>';
+  html +=   '<div class="ident">' +
+              '<div class="who">' + esc(def.name) + '</div>' +
+              '<div class="cat">' + esc(def.cat) + '</div>' +
+              '<div class="rank-title">' + esc(tier.title) + (st ? " " + "★".repeat(Math.min(st,5)) : "") + '</div>' +
+              '<div class="rank-meta">Rank ' + (ti+1) + ' of ' + TIERS.length + '</div>' +
+              '<div class="level-row"><span class="level-num">' + c.level.toLocaleString() + '</span>' +
+                '<span class="level-lab">Levels</span></div>' +
+              '<div class="xp-wrap">' +
+                bar(pct, intoTier(c.level) + " / " + TIER_SIZE + " to next rank") +
+              '</div>' +
+              renderChips(c) +
+            '</div>';
+  html += '</div>';
+
+  // --- freeze status ---
+  if(frozen){
+    const goalPct = c.frozen.quest ? 0 : (c.frozen.escrow / c.frozen.goal) * 100;
+    html += '<div class="freeze-box">' +
+      '<h3>❄ Status Effect: Frozen</h3>' +
+      (c.frozen.quest
+        ? '<div class="quest">Unfreeze Quest: <strong>' + esc(c.frozen.quest) + '</strong></div>' +
+          (parentMode ? '<button class="gold" data-act="quest-done" data-char="' + def.id + '">Quest Complete &mdash; Thaw</button>' : '')
+        : bar(goalPct, c.frozen.escrow + " / " + c.frozen.goal + " to break the ice", true)) +
+      '<div class="escrow-note">Levels earned right now are held in escrow: <strong>+' + c.frozen.escrow +
+        '</strong>. Nothing is lost &mdash; every one of them is released the moment the ice breaks.</div>' +
+    '</div>';
+  }
+
+  // --- stats ---
+  html += '<div class="section-head">Attributes</div><div class="stats">';
+  STAT_DEFS.forEach(s => {
+    html += '<div class="stat"><div class="g">' + s.glyph + '</div>' +
+            '<div class="v">' + statValue(c, s.key) + '</div>' +
+            '<div class="n">' + s.label + '</div></div>';
+  });
+  html += '</div>';
+
+  // --- task board ---
+  html += '<div class="section-head">Quest Board <span class="dim small" style="letter-spacing:0;text-transform:none">' +
+          (parentMode ? "tap Award to give levels" : "tap to ask a parent") + '</span></div>';
+  html += renderTaskGroup(def.id, "Daily", AWARDS.daily, true);
+  html += renderTaskGroup(def.id, "Milestones", AWARDS.milestone, false);
+  html += renderTaskGroup(def.id, "Quick Deeds", AWARDS.quick, false);
+
+  // --- gear ---
+  html += '<div class="section-head">Equipment</div><div class="gear">';
+  TIERS.forEach((t, i) => {
+    if(i > ti + 1) return;                       // show current + one teaser
+    const locked = i > ti;
+    t.gear.forEach(g => {
+      html += '<div class="gear-item' + (locked ? " locked" : "") + '">' +
+                '<span class="slot">Rank ' + (i+1) + '</span>' +
+                '<span>' + esc(g) + (locked ? " (locked)" : "") + '</span></div>';
+    });
+  });
+  html += '</div>';
+
+  // --- badges ---
+  html += '<div class="section-head">Feats</div><div class="badges">';
+  BADGES.forEach(b => {
+    const has = c.badges.includes(b.id);
+    html += '<div class="badge' + (has ? "" : " locked") + '" title="' + esc(b.name) + '">' + b.icon + '</div>';
+  });
+  html += '</div>';
+
+  // --- parent controls ---
+  if(parentMode) html += renderParentBox(def, c);
+
+  // --- log ---
+  html += '<div class="section-head">Recent Deeds</div><div class="log">';
+  if(!c.log.length) html += '<div class="dim small">Nothing yet today.</div>';
+  c.log.slice(0,14).forEach(e => {
+    const sign = e.amount > 0 ? "+" : "";
+    const col = e.mode === "escrow" ? "var(--ice)" : (e.mode === "freeze" ? "var(--ice)" : "var(--gold)");
+    html += '<div class="log-row">' +
+              '<span class="t">' + clockOf(e.ts) + '</span>' +
+              '<span class="a" style="color:' + col + '">' + (e.amount ? sign + e.amount : "❄") + '</span>' +
+              '<span class="l" title="' + esc(e.label) + '">' + esc(e.label) + '</span>' +
+              (parentMode && (e.mode === "level" || e.mode === "escrow")
+                ? '<button class="tiny ghost" data-act="undo" data-char="' + def.id + '" data-entry="' + e.id + '">undo</button>'
+                : '') +
+            '</div>';
+  });
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+}
+
+function renderChips(c){
+  let h = '<div class="chips">';
+  if(c.frozen.active) h += '<span class="chip ice">❄ Frozen</span>';
+  else h += '<span class="chip ok">✦ Ready</span>';
+  if(c.streak > 0) h += '<span class="chip streak">🔥 ' + c.streak + ' day streak</span>';
+  h += '<span class="chip">Best: ' + c.bestStreak + '</span>';
+  const claimedToday = Object.keys(c.today.claimed).length;
+  h += '<span class="chip">' + claimedToday + ' deeds today</span>';
+  h += '</div>';
+  return h;
+}
+
+function renderTaskGroup(charId, label, list, big){
+  const c = state.chars[charId];
+  let h = '<div class="task-group"><div class="task-group-label">' + esc(label) + '</div>';
+  list.forEach(t => {
+    const done = !!c.today.claimed[t.id];
+    const pending = c.pending.some(p => p.taskId === t.id);
+    const cls = "task" + (big ? " big" : "") + (done ? " done" : (pending ? " pending" : ""));
+    h += '<div class="' + cls + '">';
+    h +=   '<span class="val">+' + t.value + '</span>';
+    h +=   '<span class="lab">' + esc(t.label) + '</span>';
+    h +=   '<span class="act">';
+    if(done){
+      h += '<span class="tick">✔</span>';
+    }else if(parentMode){
+      if(pending){
+        h += '<button class="gold tiny" data-act="approve" data-char="' + charId + '" data-task="' + t.id + '">Approve</button>';
+        h += '<button class="tiny danger" data-act="deny" data-char="' + charId + '" data-task="' + t.id + '">No</button>';
+      }else{
+        h += '<button class="gold tiny" data-act="give" data-char="' + charId + '" data-task="' + t.id + '">Award</button>';
+      }
+    }else{
+      h += pending
+        ? '<span class="small" style="color:var(--ice)">&#9873; waiting for a parent</span>'
+        : '<button class="tiny" data-act="request" data-char="' + charId + '" data-task="' + t.id + '">I did it</button>';
+    }
+    h +=   '</span>';
+    h += '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function renderParentBox(def, c){
+  let h = '<div class="parent-box"><h3>Parent Controls &mdash; ' + esc(def.name) + '</h3>';
+  h += '<div class="prow">' +
+         '<input type="number" id="custom-amt-' + def.id + '" placeholder="Levels" value="5">' +
+         '<input type="text" id="custom-lab-' + def.id + '" placeholder="Reason (shows in the log)">' +
+         '<button class="gold tiny" data-act="custom" data-char="' + def.id + '">Award</button>' +
+       '</div>';
+  if(!c.frozen.active){
+    h += '<div class="prow"><button class="tiny" style="border-color:var(--ice-deep);color:var(--ice)" ' +
+         'data-act="freeze" data-char="' + def.id + '">❄ Freeze Character</button>' +
+         '<span class="dim small">Progress pauses. Nothing is taken away.</span></div>';
+  }else{
+    h += '<div class="plabel">Way out #1 &mdash; earn their way out</div>';
+    h += '<div class="prow">' +
+           '<span class="small">Break the ice after earning</span>' +
+           '<input type="number" id="thaw-goal-' + def.id + '" value="' + c.frozen.goal + '" min="1">' +
+           '<span class="small">levels</span>' +
+           '<button class="tiny" data-act="set-goal" data-char="' + def.id + '">Set</button>' +
+         '</div>';
+    h += '<div class="phelp">A target, not a reward. They earn it off the normal quest board. ' +
+         'Every level earned while frozen is held in escrow and released the moment the ice breaks &mdash; ' +
+         'currently holding <strong>+' + c.frozen.escrow + '</strong>.</div>';
+
+    h += '<div class="plabel">Way out #2 &mdash; one specific job</div>';
+    h += '<div class="prow">' +
+           '<input type="text" id="quest-' + def.id + '" placeholder="e.g. Apologize to your brother" value="' + esc(c.frozen.quest) + '">' +
+           '<button class="tiny" data-act="set-quest" data-char="' + def.id + '">Set Task</button>' +
+         '</div>';
+    h += '<div class="phelp">Naming a task <em>replaces</em> the level target above. You decide when it is done. ' +
+         'Clear the box and press Set Task to go back to the level target.</div>';
+
+    h += '<div class="prow" style="margin-top:10px"><button class="tiny" data-act="force-thaw" data-char="' + def.id + '">Thaw Now</button>' +
+         '<span class="dim small">Overrides both. Auto-thaws at midnight either way.</span></div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function renderFooter(){
+  let h = '<div class="panel footer">';
+  h += '<div class="small dim">Progress is stored in this browser only. Save a backup file often.</div>';
+  h += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+  h +=   '<button class="tiny" data-act="backup">Save Backup</button>';
+  h +=   '<button class="tiny" data-act="restore">Restore Backup</button>';
+  if(parentMode){
+    h += '<button class="tiny" data-act="change-pin">Change PIN</button>';
+    h += '<button class="tiny danger" data-act="wipe">Reset Everything</button>';
+  }
+  h += '</div></div>';
+  h += '<input type="file" id="restore-file" accept=".json,application/json" style="display:none">';
+  return h;
+}
+
+function renderModal(){
+  if(!modal) return "";
+  if(modal.type === "pin"){
+    return '<div class="modal-bg" data-act="modal-bg">' +
+      '<div class="panel modal" data-stop="1">' +
+        '<h2>Parent PIN</h2>' +
+        '<input class="pin-input" id="pin-field" type="password" inputmode="numeric" maxlength="8" autocomplete="off">' +
+        (modal.error ? '<div class="small" style="color:var(--bad);margin-top:8px">Wrong PIN.</div>' : '') +
+        '<div class="row"><button data-act="modal-cancel">Cancel</button>' +
+        '<button class="gold" data-act="pin-ok">Unlock</button></div>' +
+      '</div></div>';
+  }
+  if(modal.type === "newpin"){
+    return '<div class="modal-bg" data-act="modal-bg">' +
+      '<div class="panel modal" data-stop="1">' +
+        '<h2>Set a New PIN</h2>' +
+        '<input class="pin-input" id="pin-field" type="text" inputmode="numeric" maxlength="8" autocomplete="off">' +
+        '<div class="row"><button data-act="modal-cancel">Cancel</button>' +
+        '<button class="gold" data-act="newpin-ok">Save PIN</button></div>' +
+      '</div></div>';
+  }
+  if(modal.type === "confirm"){
+    return '<div class="modal-bg" data-act="modal-bg">' +
+      '<div class="panel modal" data-stop="1">' +
+        '<h2>' + esc(modal.title) + '</h2>' +
+        '<div class="small">' + esc(modal.body) + '</div>' +
+        '<div class="row"><button data-act="modal-cancel">Cancel</button>' +
+        '<button class="danger" data-act="confirm-ok">' + esc(modal.ok || "Confirm") + '</button></div>' +
+      '</div></div>';
+  }
+  return "";
+}
+
+function render(){
+  const app = document.getElementById("app");
+  app.innerHTML =
+    renderTopbar() +
+    renderParty() +
+    '<div class="grid">' + CHARACTERS.map(renderCharacter).join("") + '</div>' +
+    renderFooter() +
+    renderModal();
+
+  const pf = document.getElementById("pin-field");
+  if(pf) pf.focus();
+}
+
+/* ============================================================================
+   10. BACKUP / RESTORE
+   ============================================================================ */
+
+function backup(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "cat-warrior-levels-" + today() + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  state.lastBackup = today(); save(); render();
+}
+
+function restoreFrom(file){
+  const rd = new FileReader();
+  rd.onload = () => {
+    try{
+      state = migrate(JSON.parse(rd.result));
+      save(); rollover(); render();
+    }catch(err){
+      alert("That file could not be read as a Cat Warrior save.");
+    }
+  };
+  rd.readAsText(file);
+}
+
+/* ============================================================================
+   11. EVENTS
+   ============================================================================ */
+
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-act]");
+  if(!el) return;
+  const act = el.getAttribute("data-act");
+  const charId = el.getAttribute("data-char");
+  const taskId = el.getAttribute("data-task");
+
+  switch(act){
+    case "unlock":       modal = { type:"pin" }; render(); break;
+    case "lock":         parentMode = false; render(); break;
+    case "toggle-sound": state.sound = !state.sound; save(); render(); break;
+
+    case "request":  requestTask(charId, taskId); break;
+    case "approve":  resolveRequest(charId, taskId, true); break;
+    case "deny":     resolveRequest(charId, taskId, false); break;
+    case "give":     claimTask(charId, taskId); break;
+
+    case "custom": {
+      const amt = parseInt(document.getElementById("custom-amt-" + charId).value, 10);
+      const lab = document.getElementById("custom-lab-" + charId).value.trim();
+      if(!amt) return;
+      award(charId, amt, lab || (amt > 0 ? "Bonus levels" : "Adjustment"), null);
+      break;
+    }
+    case "freeze":     freezeCharacter(charId); break;
+    case "force-thaw": thawCharacter(charId, "Thawed by a parent"); break;
+    case "quest-done": thawCharacter(charId, "Completed the unfreeze quest"); break;
+    case "set-goal": {
+      const v = parseInt(document.getElementById("thaw-goal-" + charId).value, 10);
+      if(v > 0){ state.chars[charId].frozen.goal = v; save(); render(); }
+      break;
+    }
+    case "set-quest": {
+      state.chars[charId].frozen.quest = document.getElementById("quest-" + charId).value.trim();
+      save(); render();
+      break;
+    }
+    case "undo": undoLog(charId, el.getAttribute("data-entry")); break;
+
+    case "save-party": {
+      state.party.name = document.getElementById("party-name").value.trim() || state.party.name;
+      const g = parseInt(document.getElementById("party-goal").value, 10);
+      if(g > 0) state.party.goal = g;
+      save(); render();
+      break;
+    }
+
+    case "backup":  backup(); break;
+    case "restore": document.getElementById("restore-file").click(); break;
+    case "change-pin": modal = { type:"newpin" }; render(); break;
+    case "wipe":
+      modal = { type:"confirm", title:"Reset Everything?",
+                body:"This erases both characters, all levels, streaks and feats. Save a backup first if you might want it back.",
+                ok:"Erase All", action:"wipe" };
+      render();
+      break;
+
+    case "pin-ok": {
+      const v = document.getElementById("pin-field").value;
+      if(v === String(state.pin)){ parentMode = true; modal = null; }
+      else { modal.error = true; }
+      render();
+      break;
+    }
+    case "newpin-ok": {
+      const v = document.getElementById("pin-field").value.trim();
+      if(v.length >= 3){ state.pin = v; save(); modal = null; render(); }
+      break;
+    }
+    case "confirm-ok":
+      if(modal && modal.action === "wipe"){ state = freshState(); save(); parentMode = false; }
+      modal = null; render();
+      break;
+    case "modal-cancel": modal = null; render(); break;
+    case "modal-bg":
+      if(e.target === el){ modal = null; render(); }
+      break;
+  }
+});
+
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape" && modal){ modal = null; render(); }
+  if(e.key === "Enter" && modal){
+    const btn = document.querySelector('[data-act="pin-ok"],[data-act="newpin-ok"],[data-act="confirm-ok"]');
+    if(btn) btn.click();
+  }
+});
+
+document.addEventListener("change", e => {
+  if(e.target.id === "restore-file" && e.target.files[0]) restoreFrom(e.target.files[0]);
+});
+
+/* ============================================================================
+   12. BOOT
+   ============================================================================ */
+
+state = load();
+rollover();
+render();
+probePortraits().then(render);
+
+// If the app is left open past midnight, roll the day over on its own.
+setInterval(() => { if(rollover()) render(); }, 60000);
+</script>
+</body>
+</html>
