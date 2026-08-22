@@ -17,22 +17,17 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-; Order matters: GameState connects to GameClock on ready.
 Grid="*res://scripts/grid.gd"
 GameClock="*res://scripts/game_clock.gd"
 GameState="*res://scripts/game_state.gd"
 
 [display]
 
-; 384x216 is the pixel-art canvas, not the room. It scales 5x exactly to
-; 1920x1080. window_*_override just opens a comfortably sized dev window.
 window/size/viewport_width=384
 window/size/viewport_height=216
 window/size/window_width_override=1152
 window/size/window_height_override=648
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
-; Integer-only scaling; the alternative blurs or shears the pixel grid.
 window/stretch/scale_mode="integer"
 
 [physics]
@@ -41,7 +36,6 @@ window/stretch/scale_mode="integer"
 
 [rendering]
 
-; 0 = Nearest. The engine default is Linear, which turns pixel art to mush.
 textures/canvas_textures/default_texture_filter=0
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
