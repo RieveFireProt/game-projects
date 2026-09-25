@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { box, cylinder, group, lathe, legs, mat, mesh, place, seededRandom, sphere } from '../../engine/build.js';
 import { M } from './materials.js';
-import { emberMaterial } from './lighting.js';
+import { emberMaterial, flameMesh } from './lighting.js';
 import { label, paint } from './textures.js';
 
 // Furniture and bric-a-brac that exists for atmosphere only. Builders face local +Z.
@@ -65,6 +65,28 @@ export function mapChest() {
     chest.add(roll);
   }
   chest.add(box(0.3, 0.06, 0.24, mat(0x3a2a1a), 0.38, 0.93, 0.05));
+
+  // Three-branch candelabrum. Flames are returned so they can flicker.
+  const candelabrum = group(
+    lathe([[0, 0], [0.07, 0], [0.07, 0.015], [0.02, 0.03], [0.015, 0.2], [0.025, 0.22], [0, 0.23]], M.brass, 0, 0, 0, 16),
+    box(0.26, 0.012, 0.012, M.brass, 0, 0.2, 0),
+  );
+  const flames = [];
+  for (const x of [-0.13, 0, 0.13]) {
+    const top = x === 0 ? 0.3 : 0.26;
+    candelabrum.add(
+      cylinder(0.018, 0.012, 0.02, M.brass, x, top - 0.05, 0, 10),
+      cylinder(0.011, 0.011, 0.07, M.wax, x, top, 0, 8),
+      x === 0 ? box(0.012, 0.08, 0.012, M.brass, 0, 0.24, 0) : box(0.012, 0.05, 0.012, M.brass, x, 0.22, 0),
+    );
+    const flame = flameMesh(0.8);
+    flame.position.set(x, top + 0.05, 0);
+    candelabrum.add(flame);
+    flames.push(flame);
+  }
+  candelabrum.position.set(-0.4, 0.9, 0.05);
+  chest.add(candelabrum);
+  chest.userData.flames = flames;
   return chest;
 }
 

@@ -85,3 +85,56 @@ export const FLAVOR = {
   crate: 'The packing crate the new telescope came in. Empty now, but for straw.',
   deskChair: 'Voss’s desk chair, pushed back as if she left in a hurry.',
 };
+
+// The bookshelf. Voss's own book hides half of the torn page.
+export const BOOKS = [
+  ['Celestial Objects for Common Telescopes', 'Webb', 'Every margin is full of her pencilled notes.'],
+  ['The Story of the Heavens', 'Ball', 'A pressed violet marks the chapter on comets.'],
+  ['Outlines of Astronomy', 'Herschel', 'The spine cracks as you open it. Nothing inside.'],
+  ['Popular Astronomy', 'Newcomb', 'A well-read copy. Nothing tucked between the pages.'],
+  ['The Planet Mars', 'Flammarion', 'In French. Someone has underlined every mention of canals, with a question mark.'],
+  ['Other Worlds than Ours', 'Proctor', 'Just the book.'],
+  ['The Moon', 'Nasmyth', 'Beautiful plates of plaster lunar models. Nothing else.'],
+  ['Cosmos', 'Humboldt', 'Heavy enough to stop a door. Nothing hidden in it.'],
+  ['Comets and Meteors', 'Kirkwood', 'A dried leaf falls out. Only a leaf.'],
+  ['Nautical Almanac', 'Admiralty', 'Columns of tables, thumbed soft.'],
+  ['A Cycle of Celestial Objects', 'Smyth', 'Just the book.'],
+  ['The Spectroscope', 'Lockyer', 'The diagrams have been coloured in by hand.'],
+  ['Half-Hours with the Telescope', 'Proctor', 'A child’s copy, her name inside in careful capitals.'],
+  ['Faint Lights: Notes on Variable Stars', 'E. Voss', null],
+  ['The Heavens', 'Guillemin', 'The engravings are lovely. Nothing between them.'],
+  ['System of the World', 'Laplace', 'In French again. Untouched.'],
+  ['Handbook of Descriptive Astronomy', 'Chambers', 'Nothing tucked inside.'],
+  ['Sidereus Nuncius', 'Galileo', 'A slim facsimile, handled with care.'],
+  ['Lectures on Light', 'Tyndall', 'Just the book.'],
+  ['An Easy Guide to the Constellations', 'Gall', 'Written for beginners. Well loved all the same.'],
+  ['Monthly Notices', 'R.A.S.', 'A bound run of the Society’s journal. Her name appears in the index.'],
+  ['The Sun', 'Young', 'Just the book.'],
+  ['Uranometria', 'Bayer', 'An old star atlas, too fragile to leaf through.'],
+  ['Double Stars', 'Crossley', 'Nothing tucked inside.'],
+  ['Essays on Astronomy', 'Proctor', 'Proctor again. She must have liked him.'],
+  ['Principia', 'Newton', 'In Latin. The ribbon has never been moved.'],
+  ['Recreations in Astronomy', 'Warren', 'Just the book.'],
+];
+
+// The enciphered telegram to the Society. CIPHER is PLAIN run through the wheel.
+export const TELEGRAM = {
+  handedIn: 'Kestrel Point',
+  to: 'The Secretary, Royal Astronomical Society, Burlington House, London',
+  plain: 'THE HOUR IS NINETEEN',
+  cipher: 'YMJ MTZW NX SNSJYJJS',
+  from: 'VOSS',
+};
+
+// Pinned to the inside of the door, found once it swings open.
+export const FINAL_LETTER = {
+  heading: 'Kestrel Point — the small hours',
+  greeting: 'My dear friends,',
+  body: [
+    'If you are reading this, then you have seen it: a new light beside the Lyre, blue-white and steady, where no star has ever been written down.',
+    'Tomorrow the Society will have its telegram and its figures, and learned men will argue over what to call it. Let them. You two were the first to see it after me, and that is a thing no one can take from you.',
+    'The stairs are steep and the lantern is lit. There is a kettle on at the bottom, and I shall be waiting beside it, wanting to hear every clever thing you did.',
+  ],
+  signoff: 'Ever yours,',
+  signature: 'Elara',
+};

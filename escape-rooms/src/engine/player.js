@@ -98,5 +98,14 @@ export function createPlayer({ camera, domElement, roomRadius, colliders, spawn 
     update(0);
   }
 
-  return { update, lock, unlock, isLocked, teleport, onLockChange: (fn) => lockListeners.push(fn) };
+  return {
+    update,
+    lock,
+    unlock,
+    isLocked,
+    teleport,
+    position,
+    get speed() { return Math.hypot(velocity.x, velocity.z); },
+    onLockChange: (fn) => lockListeners.push(fn),
+  };
 }

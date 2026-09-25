@@ -7,6 +7,7 @@
   </head>
   <body>
     <canvas id="scene"></canvas>
+    <div id="vignette"></div>
 
     <div id="crosshair"></div>
     <div id="prompt" hidden></div>
@@ -18,17 +19,26 @@
     <div id="overlay" data-mode="title">
       <div class="overlay-card">
         <h1>The Observatory<br /><small>at Kestrel Point</small></h1>
-        <p class="tagline">An escape room for two.</p>
+        <p class="tagline not-end">An escape room for two.</p>
+        <p class="tagline end-only">You found her star, and the way out.</p>
+        <p id="end-summary" class="end-only"></p>
         <div class="overlay-buttons">
           <button id="btn-begin" class="btn title-only">Begin</button>
           <button id="btn-continue" class="btn paused-only">Continue</button>
           <button id="btn-restart" class="btn subtle paused-only">Start over</button>
+          <button id="btn-again" class="btn end-only">Play again</button>
         </div>
-        <label class="setting">
-          Brightness
-          <input id="brightness" type="range" min="0.6" max="2.2" step="0.05" />
-        </label>
-        <p class="controls">
+        <div class="settings not-end">
+          <label class="setting">
+            Brightness
+            <input id="brightness" type="range" min="0.6" max="2.2" step="0.05" />
+          </label>
+          <label class="setting">
+            Sound
+            <input id="volume" type="range" min="0" max="1" step="0.05" />
+          </label>
+        </div>
+        <p class="controls not-end">
           Mouse — look · WASD — walk · Click — examine<br />
           H — hint · I — satchel · 1–9 — inspect item · Esc — pause
         </p>

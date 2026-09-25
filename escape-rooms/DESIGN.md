@@ -1,5 +1,8 @@
 # The Observatory at Kestrel Point — Design Doc
 
+> **Spoilers.** This document (and `src/rooms/observatory/puzzles.js`, `story.js` and
+> `content/`) contains every puzzle answer. If you want to play the room fresh, stop here.
+
 A first-person, point-and-click escape room for two players sharing one laptop.
 Tone: quiet, atmospheric, Myst-like. Difficulty: easy to mildly medium — logical,
 no outside knowledge, every clue gets used. Target length: 45–60 minutes.
@@ -101,16 +104,38 @@ hint panel (H) only offers puzzles the players can currently reach.
 
 ## Roadmap
 
-1. ~~Design doc~~ (this file)
-2. **Grey-box prototype** — room layout, movement, hotspots, modal system, state,
-   inventory, hints, opening letter, clock → drawer → journal chain. ← *current*
-3. Remaining puzzles — torn page, bookshelf, orrery, cipher wheel, telegram, star chart,
-   telescope, ending.
-4. Atmosphere pass — textures, props/models, lighting, dust, audio (wind, clock, creaks).
+1. ~~Design doc~~
+2. ~~Grey-box prototype~~ — room layout, movement, hotspots, modal system, state,
+   inventory, hints, opening letter, clock → drawer → journal chain.
+3. ~~Remaining puzzles~~ — bookshelf search, eyepiece case, torn-page assembly
+   (drag + turn), orrery rings, cipher wheel + telegram fill-in, star chart with
+   loupe, telescope (lens, HOUR, HEIGHT, eyepiece), door, final letter, end screen.
+4. **Atmosphere pass** — mostly done: procedural textures, furnished room, flickering
+   lamps, moonbeam with dust, image-based lighting, flavour one-liners on decor,
+   synthesised audio (wind, stove, footsteps, puzzle sounds). ← *current*
+   Still open: real 3D models if wanted, music, a proper stairwell beyond the door.
 5. AI game master — small local server that calls Claude with the game state + this
    design; in-character hints on request, opening narration, event commentary, optional TTS.
 
+## Implementation notes
+
+- **Flavour vs puzzle.** Anything that matters opens a modal. Decoration shows a
+  one-line italic subtitle instead (`FLAVOR` in `story.js`), so players can tell at
+  a glance it isn't a clue. Decor must never introduce clocks, lenses, letters or
+  numbers that could be mistaken for clues.
+- **Rendering.** Static meshes are merged per material at load (`mergeStatic` in
+  `engine/build.js`); anything clickable or moving is flagged `userData.keep`.
+  Shadow maps only re-render while something moves (`room.update` returns true).
+  The environment map is captured from the room itself with bump maps off and lights
+  dimmed, because both otherwise poison the capture with NaN/Infinity.
+- **State → visuals.** `room.js` has a list of followers that ease 3D properties
+  (drawer, book, case lid, planets, dial pointers, door) towards values derived from
+  the game state, so reloading a save restores the room exactly.
+- **Testing.** In dev, `window.game` has `teleport`, `aim` (what the crosshair is on),
+  `use(hotspotId)` and `inspect(itemId)` for scripted playthroughs.
+
 ## Open questions
 
-- Personal touches: the date in the letter, the star's name, the final reveal.
+- Personal touches: the date in the letter, the star's name, the final reveal
+  (all text lives in `story.js`).
 - Should the lens say "+40°" outright (easier) or require the star chart (current plan)?

@@ -264,6 +264,8 @@ export function buildOrrery() {
   baseDrawer.userData.closedZ = 0;
   baseDrawer.userData.openZ = 0.13;
   const baseLens = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.008, 24), mat(0xcfe0ff, { metalness: 0.2, roughness: 0.05, transparent: true, opacity: 0.8 }), 0, 0.845, 0.08);
+  baseLens.userData.keep = true;
+  baseDrawer.userData.lens = baseLens;
   baseDrawer.add(baseLens);
   orrery.add(baseDrawer);
 

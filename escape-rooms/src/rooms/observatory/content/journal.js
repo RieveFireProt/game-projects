@@ -1,7 +1,7 @@
 import { el } from '../../../engine/ui.js';
 import { JOURNAL } from '../story.js';
 
-export function renderJournal(body) {
+export function renderJournal(body, game) {
   let page = 0;
   const pageEl = el('div', { class: 'journal-page handwritten' });
   const counter = el('span', { class: 'page-count' });
@@ -9,7 +9,9 @@ export function renderJournal(body) {
   const next = el('button', { class: 'btn subtle', onclick: () => go(1) }, 'Next →');
 
   function go(step) {
-    page = Math.max(0, Math.min(JOURNAL.length - 1, page + step));
+    const next = Math.max(0, Math.min(JOURNAL.length - 1, page + step));
+    if (next !== page) game?.sfx?.('paper');
+    page = next;
     show();
   }
 

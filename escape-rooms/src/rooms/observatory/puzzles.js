@@ -20,8 +20,8 @@ export const puzzles = [
     solved: (s) => s.has('page.assembled'),
     hints: [
       'The journal’s orrery page is missing. Read the entry for the 13th of October.',
-      '“Where I keep my spare eyes” — what does an astronomer keep spare eyepieces in? And Voss wrote a book of her own.',
-      'One half is in the eyepiece case beside the telescope. The other is inside the book by E. Voss on the bookshelf.',
+      '“Where I keep my spare eyes”: spare eyepieces live in a case. And Voss wrote a book of her own; look along the bookshelf.',
+      'One half is under the lining of the eyepiece case by the telescope; the other is inside “Faint Lights” by E. Voss on the bookshelf. Open either half from your satchel and fit them together.',
     ],
   },
   {
@@ -30,8 +30,8 @@ export const puzzles = [
     available: (s) => s.has('page.assembled'),
     solved: (s) => s.has('orrery.solved'),
     hints: [
-      'The assembled page shows where each planet stood on the night of the discovery.',
-      'Turn each ring until its planet matches the drawing. Count positions from the brass marker.',
+      'The pieced-together page shows where each planet stood on the night of the discovery.',
+      'Turn each ring until its planet matches the drawing. Count the stops from the brass marker, using the numerals round the edge.',
       'Mercury at III, Venus at VI, Earth at I, Mars at IV.',
     ],
   },
@@ -43,17 +43,28 @@ export const puzzles = [
     hints: [
       'The telegram is enciphered, and you found something in the desk drawer that turns letters into other letters.',
       'The journal (11th October) says the wheel’s setting is the letter above the observatory door.',
-      'The star above the door shows a V. Turn the wheel so A sits under V, then decode: THE HOUR IS NINETEEN.',
+      'The star above the door shows a V. Turn the inner SECRET ring until its A sits under the V of the outer CLEAR ring. Find each telegram letter on the inner ring and write down the outer letter above it: THE HOUR IS NINETEEN.',
+    ],
+  },
+  {
+    id: 'star-chart',
+    title: 'The height',
+    available: (s) => s.hasItem('lens') || s.has('telescope.lens'),
+    solved: (s) => s.has('telescope.solved'),
+    hints: [
+      'The lens has a small symbol engraved on its rim. Have you seen that symbol anywhere else in the room?',
+      'Every constellation on the star chart is marked with a symbol. Find the lens’s symbol there and read the line of height it sits on.',
+      'The symbol is the Lyre, and it sits on the +40° line. HEIGHT is +40°.',
     ],
   },
   {
     id: 'telescope',
     title: 'The great telescope',
-    available: (s) => s.has('telegram.decoded') || s.hasItem('lens'),
+    available: (s) => s.has('telegram.decoded') || s.hasItem('lens') || s.has('telescope.lens'),
     solved: (s) => s.has('telescope.solved'),
     hints: [
-      'The last journal entry splits the position in two: the HOUR and the HEIGHT. You also need the lens.',
-      'The hour is in the decoded telegram. The height is where the Lyre (the symbol on the lens) sits on the star chart.',
+      'The last journal entry (14th October) says the telescope needs three things: the lens, the HOUR and the HEIGHT.',
+      'Seat the lens in the socket beside the eyepiece. The HOUR is in the decoded telegram; the HEIGHT comes from the star chart.',
       'Seat the lens, set HOUR to 19 and HEIGHT to +40°, then look through the eyepiece.',
     ],
   },

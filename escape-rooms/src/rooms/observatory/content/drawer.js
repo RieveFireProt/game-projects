@@ -24,6 +24,7 @@ export function openDrawer(game) {
         digits.forEach((_, i) => {
           const digitEl = el('div', { class: 'combo-digit' }, '0');
           const turn = (step) => {
+            game.sfx?.('tick');
             digits[i] = (digits[i] + step + 10) % 10;
             digitEl.textContent = digits[i];
             check();

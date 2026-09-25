@@ -1,5 +1,7 @@
-import { el } from '../../engine/ui.js';
 import { renderJournal } from './content/journal.js';
+import { renderCipherWheel } from './content/cipherWheel.js';
+import { renderOrreryPage, renderTornPage } from './content/tornPage.js';
+import { renderLens } from './content/lens.js';
 
 // Everything that can go in the satchel. render(body, game, api) draws the inspect view.
 export const items = {
@@ -16,9 +18,36 @@ export const items = {
     icon: '⚙️',
     description: 'Two brass rings of letters, one inside the other.',
     theme: 'brass',
-    render(body) {
-      body.append(el('p', { class: 'caption' },
-        'Two brass rings of letters, one inside the other. The inner ring turns. (Interactive wheel coming in phase 3.)'));
-    },
+    render: renderCipherWheel,
+  },
+  'page-left': {
+    name: 'Torn Half-Page',
+    title: 'A torn half-page',
+    icon: '📄',
+    description: 'Found under the lining of the eyepiece case.',
+    theme: 'brass',
+    render: renderTornPage,
+  },
+  'page-right': {
+    name: 'Torn Half-Page',
+    title: 'A torn half-page',
+    icon: '📄',
+    description: 'Found between the pages of Voss’s own book.',
+    theme: 'brass',
+    render: renderTornPage,
+  },
+  'orrery-page': {
+    name: 'The Orrery Page',
+    icon: '📜',
+    description: 'The missing journal page, pieced back together.',
+    theme: 'brass',
+    render: renderOrreryPage,
+  },
+  lens: {
+    name: 'Brass Lens',
+    icon: '🔘',
+    description: 'A finely ground lens in a heavy brass rim.',
+    theme: 'brass',
+    render: renderLens,
   },
 };

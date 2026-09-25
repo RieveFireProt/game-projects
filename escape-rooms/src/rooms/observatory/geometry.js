@@ -5,6 +5,7 @@ import { M, stoneView } from './materials.js';
 import { createLights, createMoonbeam, flameMesh, sconceMesh } from './lighting.js';
 import { glow, moonFace } from './textures.js';
 import { CLOCK_TIME } from './content/clock.js';
+import { drawStarChart } from './content/starChart.js';
 import { FLAVOR } from './story.js';
 import * as F from './furniture.js';
 import * as D from './decor.js';
@@ -212,7 +213,7 @@ export function buildGeometry(scene) {
   decor(D.portrait(), { at: 80, inset: 0.02, y: 1.95, say: 'portrait', label: 'Portrait' });
   decor(D.globe(), { at: 92, inset: 0.8, turn: 0.6, collide: 0.35, say: 'globe', label: 'Globe' });
   decor(D.bookPile(8), { at: 124, inset: 0.45, turn: 0.3 });
-  decor(D.mapChest(), { at: 137, inset: 0.32, collide: 0.55, say: 'mapChest', label: 'Map chest' });
+  const mapChest = decor(D.mapChest(), { at: 137, inset: 0.32, collide: 0.55, say: 'mapChest', label: 'Map chest' });
   decor(D.winch(), { at: 176, inset: 0.02, say: 'winch', label: 'Dome winch' });
   decor(D.ladder(3.9, 0.85), { at: 189, inset: 0.02, collide: 0, say: 'ladder', label: 'Ladder' });
   colliders.push(colliderAt(atWall(new THREE.Object3D(), 189, 0.6), 0.3));
@@ -246,6 +247,7 @@ export function buildGeometry(scene) {
   }
   lights.flame(lampFlame, { intensity: 7, color: 0xffb566, shadow: true });
   lights.flame(candleFlame, { intensity: 1.6, color: 0xff9a40, jitter: 2 });
+  mapChest.userData.flames.forEach((f, i) => lights.flame(f, { intensity: i === 1 ? 1.2 : 0, color: 0xff9a40, jitter: 2 }));
   lights.flame(stove.userData.ember, { intensity: 3, color: 0xff6428, jitter: 3 });
   const stairLight = lights.flame(stairwell.flame, { intensity: 4, color: 0xffa050 });
   stairLight.visible = false;
@@ -276,6 +278,7 @@ export function buildGeometry(scene) {
   return {
     colliders,
     flavor,
+    firePosition: stove.userData.ember.getWorldPosition(new THREE.Vector3()),
     spawn: { x: 4.2, z: 1.3, yaw: THREE.MathUtils.degToRad(75) },
     update(t) {
       lights.update(t);
@@ -285,26 +288,13 @@ export function buildGeometry(scene) {
   };
 }
 
-// Placeholder chart until the star-chart puzzle draws the real one.
 function starChartTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
-  canvas.height = 720;
-  const g = canvas.getContext('2d');
-  const rand = seededRandom(3);
-  g.fillStyle = '#16213a';
-  g.fillRect(0, 0, canvas.width, canvas.height);
-  g.strokeStyle = 'rgba(210,190,130,0.35)';
-  g.lineWidth = 2;
-  for (let y = 60; y < canvas.height; y += 100) g.strokeRect(0, y, canvas.width, 0);
-  for (let x = 64; x < canvas.width; x += 128) g.strokeRect(x, 0, 0, canvas.height);
-  g.fillStyle = '#f3ecd6';
-  for (let i = 0; i < 420; i++) {
-    g.beginPath();
-    g.arc(rand() * canvas.width, rand() * canvas.height, rand() * 2 + 0.5, 0, TAU);
-    g.fill();
-  }
+  canvas.height = 704;
+  drawStarChart(canvas.getContext('2d'), canvas.width, canvas.height);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
   return texture;
 }
