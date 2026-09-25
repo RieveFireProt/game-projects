@@ -108,7 +108,9 @@ export function renderTornPage(body, game, api) {
   const place = () => right.setAttribute('transform', `translate(${piece.x} ${piece.y}) rotate(${piece.rot} ${W * 0.75} ${H / 2})`);
   place();
 
+  let done = false;
   const turn = () => {
+    if (done) return;
     piece.rot = (piece.rot + 90) % 360;
     place();
     check();
@@ -121,7 +123,7 @@ export function renderTornPage(body, game, api) {
     return p.matrixTransform(svg.getScreenCTM().inverse());
   };
   right.addEventListener('pointerdown', (e) => {
-    if (e.button === 2) return;
+    if (e.button === 2 || done) return;
     e.preventDefault();
     const p = toSvg(e);
     drag = { dx: p.x - piece.x, dy: p.y - piece.y };
@@ -144,7 +146,6 @@ export function renderTornPage(body, game, api) {
   });
   right.addEventListener('dblclick', turn);
 
-  let done = false;
   function check() {
     if (done || piece.rot !== 0 || Math.hypot(piece.x - HOME.x, piece.y - HOME.y) > SNAP) return;
     done = true;
@@ -157,8 +158,9 @@ export function renderTornPage(body, game, api) {
     game.state.removeItem('page-left');
     game.state.removeItem('page-right');
     game.state.addItem('orrery-page');
+    right.classList.remove('draggable');
     caption.textContent = 'The torn edges meet exactly. The orrery page is whole again.';
-    setTimeout(() => api.setTitle('The orrery page'), 300);
+    setTimeout(() => body.contains(wrap) && api.setTitle('The orrery page'), 300);
   }
 
   caption.replaceChildren(

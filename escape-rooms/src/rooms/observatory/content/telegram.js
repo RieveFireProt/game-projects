@@ -23,12 +23,12 @@ export function openTelegram(game) {
           const i = index++;
           const input = el('input', {
             class: 'tg-input',
-            maxlength: 1,
             value: saved[i].trim(),
             'aria-label': `Decoded letter ${i + 1}`,
             autocomplete: 'off',
             spellcheck: 'false',
           });
+          input.addEventListener('focus', () => input.select());
           input.addEventListener('input', () => {
             input.value = input.value.replace(/[^a-z]/gi, '').slice(-1).toUpperCase();
             if (input.value) inputs[i + 1]?.focus();

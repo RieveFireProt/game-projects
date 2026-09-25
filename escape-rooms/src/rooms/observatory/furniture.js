@@ -347,12 +347,19 @@ export function buildTelescope() {
 
   const head = group(
     cylinder(0.3, 0.32, 0.05, M.brass, 0, 1.325, 0, 40),
-    box(0.44, 0.3, 0.44, M.paintedIron, 0, 1.5, 0),
-    box(0.1, 0.5, 0.14, M.paintedIron, 0, 1.85, -0.3),
-    box(0.1, 0.5, 0.14, M.paintedIron, 0, 1.85, 0.3),
+    box(0.42, 0.28, 0.42, M.paintedIron, 0, 1.49, 0),
+    box(0.44, 0.03, 0.44, M.brass, 0, 1.64, 0),
     cylinder(0.05, 0.05, 0.72, M.brass, 0, 2.0, 0, 16),
   );
-  head.children[4].rotation.x = Math.PI / 2;
+  head.children[3].rotation.x = Math.PI / 2;
+  // Fork arms: tapered iron posts rising to brass trunnion bosses.
+  for (const z of [-0.3, 0.3]) {
+    const arm = cylinder(0.035, 0.06, 0.38, M.paintedIron, 0, 1.83, z, 16);
+    const boss = cylinder(0.075, 0.075, 0.07, M.brass, 0, 2.0, z, 24);
+    boss.rotation.x = Math.PI / 2;
+    const cap = sphere(0.045, M.brass, 0, 1.66, z, 12);
+    head.add(arm, boss, cap);
+  }
 
   // Setting dials with pointers that turn with the puzzle.
   const dialFace = (text) => {

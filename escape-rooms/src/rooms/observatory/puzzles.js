@@ -16,7 +16,7 @@ export const puzzles = [
   {
     id: 'torn-page',
     title: 'The missing journal page',
-    available: (s) => s.hasItem('journal'),
+    available: (s) => s.has('drawer.open'),
     solved: (s) => s.has('page.assembled'),
     hints: [
       'The journal’s orrery page is missing. Read the entry for the 13th of October.',
@@ -38,7 +38,7 @@ export const puzzles = [
   {
     id: 'telegram',
     title: 'The enciphered telegram',
-    available: (s) => s.hasItem('cipher-wheel'),
+    available: (s) => s.has('drawer.open'),
     solved: (s) => s.has('telegram.decoded'),
     hints: [
       'The telegram is enciphered, and you found something in the desk drawer that turns letters into other letters.',

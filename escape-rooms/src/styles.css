@@ -413,7 +413,7 @@ body:has(#overlay:not([hidden])) :is(#crosshair, #prompt) { display: none; }
 .orr-track { fill: none; stroke: #c9a24a; stroke-width: 16; stroke-opacity: 0.25; cursor: pointer; pointer-events: stroke; }
 .orr-track:hover { stroke-opacity: 0.45; }
 .orr-planet { transition: transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1); cursor: pointer; }
-.orr-arm { stroke: #c9a24a; stroke-width: 3; }
+.orr-arm { stroke: #c9a24a; stroke-width: 3; pointer-events: none; }
 .orr-sym { font-size: 14px; text-anchor: middle; fill: #1a1208; pointer-events: none; }
 .orrery-controls { display: flex; flex-direction: column; gap: 10px; }
 .orr-row { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; gap: 8px; }

@@ -74,14 +74,17 @@ export function createLights(scene) {
       light.position.y += 0.05;
       scene.add(light);
     }
-    flickers.push({
+    const record = {
       light,
       base: intensity,
       halo: flameGroup.userData.halo,
       haloBase: flameGroup.userData.halo?.scale.x ?? 0,
       seed: flickers.length * 17.3,
       jitter,
-    });
+    };
+    flickers.push(record);
+    // Changing record.base dims or raises the light without changing the light count.
+    if (light) light.userData.flicker = record;
     return light;
   }
 

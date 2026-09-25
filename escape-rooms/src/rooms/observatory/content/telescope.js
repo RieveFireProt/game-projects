@@ -23,6 +23,7 @@ export function openTelescope(game) {
       function panel() {
         cleanupView?.();
         cleanupView = null;
+        api.setTitle('The great telescope');
         const seated = state.has('telescope.lens');
 
         const socket = el('div', { class: 'ts-socket' });

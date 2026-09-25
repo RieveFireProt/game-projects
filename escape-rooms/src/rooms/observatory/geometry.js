@@ -250,7 +250,7 @@ export function buildGeometry(scene) {
   mapChest.userData.flames.forEach((f, i) => lights.flame(f, { intensity: i === 1 ? 1.2 : 0, color: 0xff9a40, jitter: 2 }));
   lights.flame(stove.userData.ember, { intensity: 3, color: 0xff6428, jitter: 3 });
   const stairLight = lights.flame(stairwell.flame, { intensity: 4, color: 0xffa050 });
-  stairLight.visible = false;
+  stairLight.userData.onIntensity = 4;
 
   // --- Collisions ------------------------------------------------------------
 

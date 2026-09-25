@@ -77,15 +77,18 @@ export function cipherWheel(game, { size = 420, onTurn } = {}) {
     angle = drag.base + d;
     show();
   });
-  inner.addEventListener('pointerup', () => {
+  const release = (cancelled) => {
     if (!drag) return;
     inner.classList.remove('dragging');
-    const steps = Math.round((angle - drag.base) / STEP);
+    const steps = cancelled ? 0 : Math.round((angle - drag.base) / STEP);
     angle = drag.base;
     drag = null;
     if (steps) turn(steps);
     else show();
-  });
+  };
+  inner.addEventListener('pointerup', () => release(false));
+  inner.addEventListener('pointercancel', () => release(true));
+  inner.addEventListener('lostpointercapture', () => release(false));
 
   const controls = el('div', { class: 'cw-controls' },
     el('button', { class: 'combo-btn', 'aria-label': 'Turn inner ring anticlockwise', onclick: () => turn(-1) }, '⟲'),

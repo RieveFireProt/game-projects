@@ -57,3 +57,5 @@ src/
 - `window.game` is exposed in dev for poking at state from the console, with helpers for
   scripted tests: `teleport(x, z, yawDeg, pitchDeg)`, `aim()`, `use(hotspotId)`,
   `inspect(itemId)`. `window.three` exposes the renderer, scene and camera.
+- `tools/playthrough.cjs` (**spoilers**) plays the whole room through the UI and fails on
+  console errors: run `npm run dev`, then `NODE_PATH=$(npm root -g) node tools/playthrough.cjs`.

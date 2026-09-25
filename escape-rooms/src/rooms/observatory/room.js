@@ -57,7 +57,8 @@ export function buildObservatory(scene, game) {
   function syncVisibility() {
     o.baseDrawer.userData.lens.visible = !state.has('taken.lens');
     o.telescopeLens.visible = state.has('telescope.lens');
-    o.stairLight.visible = state.has('door.open');
+    // Dimmed rather than hidden: toggling visibility would recompile every lit material.
+    o.stairLight.userData.flicker.base = state.has('door.open') ? o.stairLight.userData.onIntensity : 0;
   }
 
   // Snap everything to the saved state on load.
