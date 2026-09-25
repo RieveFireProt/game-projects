@@ -17,10 +17,13 @@ export function renderJournal(body, game) {
 
   function show() {
     const entry = JOURNAL[page];
+    const text = entry.torn && game?.state.has('page.assembled')
+      ? [...entry.text, 'You have the missing page now, pieced back together in your satchel.']
+      : entry.text;
     pageEl.classList.toggle('torn', Boolean(entry.torn));
     pageEl.replaceChildren(
       ...(entry.date ? [el('h3', {}, entry.date)] : []),
-      ...entry.text.map((t) => el('p', {}, t)));
+      ...text.map((t) => el('p', {}, t)));
     counter.textContent = `${page + 1} / ${JOURNAL.length}`;
     prev.disabled = page === 0;
     next.disabled = page === JOURNAL.length - 1;

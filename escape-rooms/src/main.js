@@ -12,6 +12,7 @@ import { buildObservatory } from './rooms/observatory/room.js';
 
 const RELOCK_GRACE_MS = 400;
 const STRIDE = 0.75; // metres between footsteps
+const EXIT_SPEED = 1.5; // m/s for the walk out at the end
 const SETTINGS_KEY = 'escape-rooms:settings';
 const ENV_INTENSITY = 0.45;
 
@@ -136,17 +137,48 @@ const overlayMode = () => (state.has('escaped') ? 'end' : state.has('started') ?
 
 player.onLockChange((locked) => {
   if (locked) hud.hideOverlay();
-  else if (!modal.isOpen()) hud.showOverlay(overlayMode());
+  else if (!modal.isOpen() && !exit) hud.showOverlay(overlayMode());
 });
-modal.onClose(() => (state.has('escaped') ? hud.showOverlay('end') : resume()));
+modal.onClose(() => {
+  if (exit) return;
+  if (state.has('escaped')) hud.showOverlay('end');
+  else resume();
+});
 
-// The end: stop the clock and show how it went.
+// The end: stop the clock, walk the players out through the door, then show how it went.
+let exit = null;
 game.finish = () => {
+  const curve = new THREE.CatmullRomCurve3(room.exitPath(player.position));
+  exit = { curve, t: 0, duration: Math.max(3.5, curve.getLength() / EXIT_SPEED), stepAt: 0 };
   state.set('escaped');
+  document.body.classList.add('cinematic');
   modal.close();
   player.unlock();
-  showEnd();
+  hud.hideOverlay();
 };
+const fade = document.getElementById('fade');
+const lookTarget = new THREE.Vector3();
+function updateExit(dt) {
+  exit.t = Math.min(1, exit.t + dt / exit.duration);
+  const k = exit.t < 0.5 ? 2 * exit.t * exit.t : 1 - (-2 * exit.t + 2) ** 2 / 2; // ease in-out
+  exit.curve.getPointAt(k, camera.position);
+  // Look along the path a couple of metres ahead, tipping down as the stairs begin.
+  const ahead = exit.curve.getPointAt(Math.min(1, k + 2 / exit.curve.getLength()), lookTarget);
+  if (k > 0.97) ahead.addScaledVector(exit.curve.getTangentAt(1), 2);
+  lookTarget.y -= 0.3 + Math.max(0, k - 0.7) * 1.2;
+  camera.lookAt(lookTarget);
+  if (exit.t > exit.stepAt) {
+    exit.stepAt += 0.55 / exit.duration;
+    audio.play('step');
+  }
+  fade.style.opacity = String(Math.max(0, (exit.t - 0.62) / 0.33));
+  if (exit.t >= 1) {
+    exit = null;
+    document.body.classList.remove('cinematic');
+    fade.style.opacity = '1';
+    showEnd();
+  }
+}
 function showEnd() {
   const s = Math.floor(state.elapsedMs / 1000);
   const unit = (n, word) => (n ? `${n} ${word}${n === 1 ? '' : 's'}` : '');
@@ -233,7 +265,8 @@ renderer.setAnimationLoop((timestamp) => {
   const dt = Math.min(timer.getDelta(), 0.1);
   const locked = player.isLocked();
 
-  if (locked) {
+  if (exit) updateExit(dt);
+  else if (locked) {
     player.update(dt);
     stride += player.speed * dt;
     if (stride > STRIDE) {
@@ -242,7 +275,7 @@ renderer.setAnimationLoop((timestamp) => {
     }
   }
   audio.setFireDistance(player.position.distanceTo(room.firePosition));
-  hud.setPrompt(interaction.update(locked)?.label ?? null);
+  hud.setPrompt(interaction.update(locked && !exit)?.label ?? null);
   if (room.update(dt)) renderer.shadowMap.needsUpdate = true;
 
   if (state.has('started') && !state.has('escaped') && (locked || modal.isOpen())) {

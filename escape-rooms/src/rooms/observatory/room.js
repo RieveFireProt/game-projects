@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { buildGeometry, ROOM_RADIUS } from './geometry.js';
 import { createHotspots } from './hotspots.js';
 import { items } from './items.js';
@@ -78,6 +79,20 @@ export function buildObservatory(scene, game) {
       ...flavor.map((f, i) => ({ id: `flavor-${i}`, object: f.object, label: f.label, onUse: () => game.hud.say(f.line) })),
     ],
     intro: () => openLetter(game),
+    // Waypoints for the walk out through the door and down the stairs, skirting the telescope.
+    exitPath(from) {
+      const eye = 1.6;
+      const points = [new THREE.Vector3(from.x, eye, from.z)];
+      const a = Math.atan2(from.z, from.x);
+      if (Math.abs(a) > Math.PI / 3) points.push(new THREE.Vector3(Math.cos(a / 2) * 3.6, eye, Math.sin(a / 2) * 3.6));
+      points.push(
+        new THREE.Vector3(4.7, eye, 0),
+        new THREE.Vector3(ROOM_RADIUS - 0.1, eye, 0),
+        new THREE.Vector3(ROOM_RADIUS + 1.0, eye - 0.1, 0),
+        new THREE.Vector3(ROOM_RADIUS + 2.0, eye - 0.65, 0),
+      );
+      return points;
+    },
     firePosition: geometry.firePosition,
     soundsFor(type, detail) {
       if (type === 'hint') return [['paper', 0]];
