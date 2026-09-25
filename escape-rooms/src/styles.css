@@ -101,6 +101,21 @@ body:has(#overlay:not([hidden])) :is(#crosshair, #prompt) { display: none; }
   animation: fade-in 0.3s;
 }
 
+#musing {
+  position: fixed;
+  bottom: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(760px, 86vw);
+  text-align: center;
+  font-style: italic;
+  font-size: 19px;
+  color: rgba(242, 230, 200, 0.92);
+  text-shadow: 0 0 8px #000, 0 0 18px #000;
+  pointer-events: none;
+  animation: fade-in 0.4s;
+}
+
 /* --- Title / pause overlay ---------------------------------------------------- */
 
 #overlay {
@@ -126,6 +141,16 @@ body:has(#overlay:not([hidden])) :is(#crosshair, #prompt) { display: none; }
 .overlay-card h1 small { display: block; font-size: 24px; font-style: italic; color: var(--brass); }
 .tagline { font-style: italic; color: rgba(242, 230, 200, 0.7); }
 .overlay-buttons { display: flex; gap: 12px; justify-content: center; margin: 28px 0; }
+.setting {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  margin: -8px 0 18px;
+  font-size: 15px;
+  color: rgba(242, 230, 200, 0.7);
+}
+.setting input { accent-color: var(--brass); width: 180px; }
 .controls { font-size: 14px; line-height: 1.7; color: rgba(242, 230, 200, 0.55); }
 
 .btn {

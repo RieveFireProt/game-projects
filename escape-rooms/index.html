@@ -13,6 +13,7 @@
     <div id="topbar"><span id="timer">0:00</span><span class="keys">H hint · I satchel</span></div>
     <div id="inventory-bar"></div>
     <div id="toast" hidden></div>
+    <div id="musing" hidden></div>
 
     <div id="overlay" data-mode="title">
       <div class="overlay-card">
@@ -23,6 +24,10 @@
           <button id="btn-continue" class="btn paused-only">Continue</button>
           <button id="btn-restart" class="btn subtle paused-only">Start over</button>
         </div>
+        <label class="setting">
+          Brightness
+          <input id="brightness" type="range" min="0.6" max="2.2" step="0.05" />
+        </label>
         <p class="controls">
           Mouse — look · WASD — walk · Click — examine<br />
           H — hint · I — satchel · 1–9 — inspect item · Esc — pause

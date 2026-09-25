@@ -61,3 +61,27 @@ export const JOURNAL = [
     ],
   },
 ];
+
+// One-line musings for things that are only atmosphere. Shown as a passing subtitle,
+// never a modal, so players can tell at a glance they aren't part of a puzzle.
+export const FLAVOR = {
+  coatStand: 'Voss’s heavy travelling cloak. It smells of sea air and pipe smoke.',
+  mapChest: 'Shallow drawers of old coastline charts, spotted with damp. Nothing of the sky in here.',
+  winch: 'The winch for the dome shutters. The slit is already open as wide as it will go.',
+  ladder: 'A ladder up to the dome rail, for greasing the wheels. The rungs are slick with it.',
+  stove: 'A pot-bellied stove, still warm. Someone fed it not long before you arrived.',
+  armchair: 'A deep leather armchair, worn to the shape of its owner.',
+  teacup: 'Tea, stone cold. Whoever poured it forgot it entirely.',
+  globe: 'A terrestrial globe. Someone has pencilled a small circle around this stretch of coast.',
+  trunk: 'A steamer trunk plastered with shipping labels. Eclipse expeditions, by the look of it.',
+  portrait: 'A stern woman with a small brass telescope. The resemblance to Voss is unmistakable.',
+  moon: 'An engraving of the Moon, drawn at the eyepiece. Every crater is labelled in tiny script.',
+  saturn: 'Saturn and its rings, engraved with loving care.',
+  fern: 'A fern, the only living thing up here besides you two. It could use some water.',
+  barometer: 'The barometer needle leans towards CHANGE.',
+  cabinet: 'Sextants, a spyglass, an astrolabe. Lovely things, but none of them fit the great telescope.',
+  observingChair: 'An observing chair, its seat wound up to the height of the eyepiece.',
+  telegraph: 'A telegraph key. The line is dead; the battery has been disconnected.',
+  crate: 'The packing crate the new telescope came in. Empty now, but for straw.',
+  deskChair: 'Voss’s desk chair, pushed back as if she left in a hurry.',
+};

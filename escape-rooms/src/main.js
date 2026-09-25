@@ -10,6 +10,8 @@ import { createHud } from './engine/hud.js';
 import { buildObservatory } from './rooms/observatory/room.js';
 
 const RELOCK_GRACE_MS = 400;
+const SETTINGS_KEY = 'escape-rooms:settings';
+const ENV_INTENSITY = 0.45;
 
 const canvas = document.getElementById('scene');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -18,7 +20,9 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.shadowMap.autoUpdate = false; // the room is static; re-rendered only when something moves
+renderer.shadowMap.needsUpdate = true;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 200);
@@ -31,7 +35,60 @@ const game = { state, modal, hud, room: null, openModal: null };
 
 const room = buildObservatory(scene, game);
 game.room = room;
-if (import.meta.env.DEV) window.game = game; // for console poking and smoke tests
+
+captureEnvironment();
+
+// Image-based light captured from the room itself, so brass and glass pick up the
+// lamps and the moon instead of reflecting black. Two things would poison the map
+// with NaN/Infinity, which the blur then smears everywhere: bump maps (degenerate
+// derivatives at cube-face resolution) and surfaces millimetres from a flame
+// (overflowing half floats). So both are tamed for the duration of the capture.
+function captureEnvironment() {
+  const SCALE = 1 / 64;
+  const lights = [];
+  const bumped = new Map();
+  scene.traverse((o) => {
+    if (o.isLight) lights.push(o);
+    [].concat(o.material ?? []).forEach((m) => m.bumpMap && bumped.set(m, m.bumpMap));
+  });
+  const swapBumps = (restore) => bumped.forEach((map, m) => {
+    m.bumpMap = restore ? map : null;
+    m.needsUpdate = true;
+  });
+
+  lights.forEach((l) => (l.intensity *= SCALE));
+  swapBumps(false);
+  scene.updateMatrixWorld(true);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(scene, 0.04, 0.1, 120, { position: new THREE.Vector3(0, 1.8, 0) }).texture;
+  scene.environmentIntensity = ENV_INTENSITY / SCALE;
+  pmrem.dispose();
+  swapBumps(true);
+  lights.forEach((l) => (l.intensity /= SCALE));
+}
+
+// Per-browser display settings (separate from the save game).
+const settings = (() => {
+  try {
+    return { brightness: 1.25, ...JSON.parse(localStorage.getItem(SETTINGS_KEY)) };
+  } catch {
+    return { brightness: 1.25 };
+  }
+})();
+const brightness = document.getElementById('brightness');
+function applyBrightness(value) {
+  settings.brightness = Number(value);
+  renderer.toneMappingExposure = settings.brightness;
+  brightness.value = settings.brightness;
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    // Storage unavailable; the setting just won't persist.
+  }
+}
+applyBrightness(settings.brightness);
+brightness.addEventListener('input', () => applyBrightness(brightness.value));
+if (import.meta.env.DEV) Object.assign(window, { game, three: { THREE, renderer, scene, camera } }); // console poking, smoke tests
 
 const interaction = createInteraction({ camera, scene });
 room.hotspots.forEach(interaction.register);
@@ -70,10 +127,14 @@ hud.showOverlay(state.has('started') ? 'paused' : 'title');
 
 // Dev only: ?peek=x,z,yawDeg,pitchDeg places the camera and hides the title screen.
 const peek = new URLSearchParams(window.location.search).get('peek');
-if (import.meta.env.DEV && peek) {
-  const [x, z, yaw, pitch] = peek.split(',').map(Number);
-  player.teleport(x, z, THREE.MathUtils.degToRad(yaw), THREE.MathUtils.degToRad(pitch || 0));
-  hud.hideOverlay();
+if (import.meta.env.DEV) {
+  game.teleport = (x, z, yaw, pitch = 0) => player.teleport(x, z, THREE.MathUtils.degToRad(yaw), THREE.MathUtils.degToRad(pitch));
+  game.aim = () => (camera.updateMatrixWorld(), interaction.update(true)?.id ?? null); // what the crosshair is on
+  game.use = (id) => room.hotspots.find((h) => h.id === id)?.onUse();
+  if (peek) {
+    game.teleport(...peek.split(',').map(Number));
+    hud.hideOverlay();
+  }
 }
 
 hud.onClick('btn-begin', () => {
@@ -121,16 +182,18 @@ window.addEventListener('resize', () => {
 
 // --- Main loop ---------------------------------------------------------------
 
-const clock = new THREE.Clock();
+const timer = new THREE.Timer();
+timer.connect(document);
 hud.setTimer(state.elapsedMs);
 
-renderer.setAnimationLoop(() => {
-  const dt = Math.min(clock.getDelta(), 0.1);
+renderer.setAnimationLoop((timestamp) => {
+  timer.update(timestamp);
+  const dt = Math.min(timer.getDelta(), 0.1);
   const locked = player.isLocked();
 
   if (locked) player.update(dt);
   hud.setPrompt(interaction.update(locked)?.label ?? null);
-  room.update(dt);
+  if (room.update(dt)) renderer.shadowMap.needsUpdate = true;
 
   if (state.has('started') && (locked || modal.isOpen())) {
     state.tick(dt);

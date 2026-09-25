@@ -11,6 +11,8 @@ export function createHotspots(o, game) {
     { id: 'letter', object: o.letter, label: 'Letter', onUse: () => openLetter(game) },
     { id: 'clock', object: o.clock, label: 'Wall clock', onUse: () => openClock(game) },
     { id: 'drawer', object: o.drawer, label: 'Desk drawer', onUse: () => openDrawer(game) },
+    // The rest of the desk leads to the drawer too, so it's never fiddly to hit.
+    { id: 'desk', object: o.desk, label: 'Desk', onUse: () => openDrawer(game) },
     {
       id: 'door',
       object: o.door,
