@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Observatory at Kestrel Point</title>
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <div id="crosshair"></div>
+    <div id="prompt" hidden></div>
+    <div id="topbar"><span id="timer">0:00</span><span class="keys">H hint · I satchel</span></div>
+    <div id="inventory-bar"></div>
+    <div id="toast" hidden></div>
+
+    <div id="overlay" data-mode="title">
+      <div class="overlay-card">
+        <h1>The Observatory<br /><small>at Kestrel Point</small></h1>
+        <p class="tagline">An escape room for two.</p>
+        <div class="overlay-buttons">
+          <button id="btn-begin" class="btn title-only">Begin</button>
+          <button id="btn-continue" class="btn paused-only">Continue</button>
+          <button id="btn-restart" class="btn subtle paused-only">Start over</button>
+        </div>
+        <p class="controls">
+          Mouse — look · WASD — walk · Click — examine<br />
+          H — hint · I — satchel · 1–9 — inspect item · Esc — pause
+        </p>
+      </div>
+    </div>
+
+    <div id="modal" hidden>
+      <div class="modal-backdrop"></div>
+      <div class="modal-panel">
+        <header>
+          <h2 class="modal-title"></h2>
+          <button class="modal-close" aria-label="Close">✕</button>
+        </header>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
