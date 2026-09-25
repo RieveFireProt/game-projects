@@ -17,6 +17,7 @@ export { ROOM_RADIUS };
 
 const MOON_POSITION = new THREE.Vector3(-70, 42, 4);
 const DOOR_HEIGHT = 2.2;
+const DOOR_STAR_HEIGHT = 2.82;
 const TAU = Math.PI * 2;
 
 // A band of wall (open cylinder, seen from inside) that leaves the doorway clear.
@@ -189,7 +190,7 @@ export function buildGeometry(scene) {
 
   const { door, hinge: doorHinge, doorStar } = F.buildDoor();
   atWall(door, 0, 0);
-  atWall(doorStar, 0, 0.02);
+  atWall(doorStar, 0, 0.02, DOOR_STAR_HEIGHT);
 
   const { crate, eyepieceCase, lid: eyepieceLid } = F.buildEyepieceCase();
   const crateGroup = place(group(crate, eyepieceCase), 0.95, 0, -1.05, 0.4);

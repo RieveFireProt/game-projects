@@ -417,7 +417,7 @@ export function buildTelescope() {
 }
 
 // Iron-studded oak door on a hinge pivot, in a stone surround, with the brass
-// locking gears beside it and the star plaque above.
+// locking gears beside it. The star plaque is returned separately (placed above it).
 export function buildDoor() {
   const leaf = group(box(1.1, 2.2, 0.08, M.oak, 0.55, 1.1, 0));
   for (let i = 1; i < 5; i++) leaf.add(box(0.012, 2.2, 0.085, M.darkWood, i * 0.22, 1.1, 0));
@@ -478,7 +478,6 @@ export function buildDoor() {
   );
   letter.position.z = 0.041;
   const doorStar = group(star, letter);
-  doorStar.position.set(0, 2.82, 0.02);
 
   return { door, hinge, doorStar };
 }
