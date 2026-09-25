@@ -111,7 +111,7 @@ hint panel (H) only offers puzzles the players can currently reach.
    (drag + turn), orrery rings, cipher wheel + telegram fill-in, star chart with
    loupe, telescope (lens, HOUR, HEIGHT, eyepiece), door, final letter, end screen.
 4. **Atmosphere pass** — mostly done: procedural textures, furnished room, flickering
-   lamps, moonbeam with dust, image-based lighting, flavour one-liners on decor,
+   lamps, moonbeam, image-based lighting, flavour one-liners on decor,
    synthesised audio (wind, stove, footsteps, puzzle sounds). ← *current*
    Still open: real 3D models if wanted, music, a proper stairwell beyond the door.
 5. AI game master — small local server that calls Claude with the game state + this

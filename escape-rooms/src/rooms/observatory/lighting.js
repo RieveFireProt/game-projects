@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { box, cylinder, group, lathe, mat, seededRandom, unclickable } from '../../engine/build.js';
+import { box, cylinder, group, lathe, mat, unclickable } from '../../engine/build.js';
 import { glow } from './textures.js';
 
-// Light sources that live in the room: flickering flames, the moonbeam through the
-// dome slit and the dust drifting in it. Everything here is decoration only.
+// Light sources that live in the room: flickering flames and the moonbeam through the
+// dome slit. Everything here is decoration only.
 
 const GLOW = glow();
 
@@ -102,8 +102,8 @@ export function createLights(scene) {
   return { flame, update };
 }
 
-// Moonlight through the dome slit: a shadow-casting directional light, a soft visible
-// beam and dust motes drifting inside it.
+// Moonlight through the dome slit: a shadow-casting directional light, and a soft visible
+// beam.
 export function createMoonbeam(scene, { moonPosition, roomRadius, wallHeight, slitHalfWidth }) {
   const dir = moonPosition.clone().normalize().negate(); // travel direction of the light
 
@@ -212,47 +212,10 @@ export function createMoonbeam(scene, { moonPosition, roomRadius, wallHeight, sl
   beam.renderOrder = 2;
   beam.frustumCulled = false;
 
-  // Dust motes placed along random rays of the beam.
-  const rand = seededRandom(97);
-  const COUNT = 500;
-  const base = [];
-  const dustPositions = new Float32Array(COUNT * 3);
-  for (let i = 0; i < COUNT; i++) {
-    const elev = Math.pow(rand(), 1.6) * MAX_ELEV * 0.85;
-    const side = rand() * 2 - 1;
-    const p = slitPoint(elev, side);
-    const t = exitT(p) * (0.15 + rand() * 0.8);
-    base.push({ p: p.addScaledVector(dir, t), phase: rand() * 100, speed: 0.2 + rand() * 0.4 });
-  }
-  const dustGeometry = new THREE.BufferGeometry();
-  dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
-  const dust = new THREE.Points(dustGeometry, new THREE.PointsMaterial({
-    map: GLOW,
-    color: 0xc8d4ff,
-    size: 0.028,
-    transparent: true,
-    opacity: 0.55,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  }));
-  dust.frustumCulled = false;
-
   unclickable(beam);
-  unclickable(dust);
-  scene.add(beam, dust);
+  scene.add(beam);
 
-  function update(t) {
-    for (let i = 0; i < COUNT; i++) {
-      const { p, phase, speed } = base[i];
-      const k = t * speed * 0.15 + phase;
-      dustPositions[i * 3] = p.x + Math.sin(k) * 0.12;
-      dustPositions[i * 3 + 1] = p.y + Math.sin(k * 0.7 + 1.3) * 0.18;
-      dustPositions[i * 3 + 2] = p.z + Math.cos(k * 1.3) * 0.12;
-    }
-    dustGeometry.attributes.position.needsUpdate = true;
-  }
-
-  return { light: moon, update };
+  return { light: moon };
 }
 
 // Glowing coals behind a stove door grille.

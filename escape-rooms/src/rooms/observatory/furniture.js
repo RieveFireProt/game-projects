@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { box, cylinder, group, lathe, legs, mat, mesh, place, seededRandom, shadowed, sphere } from '../../engine/build.js';
 import { M } from './materials.js';
+import { ROOM_RADIUS } from './layout.js';
 import { flameMesh } from './lighting.js';
 import { bookSpine, label, scribbles } from './textures.js';
 
@@ -459,7 +460,12 @@ export function buildDoor() {
     gear(0.11, 12, -0.02, -0.2),
     box(0.03, 0.03, 0.34, M.iron, -0.28, -0.2, 0.06),
   );
-  gears.position.set(1.18, 1.25, 0.05);
+  // The wall curves towards the room away from the door, so sit the panel on the
+  // wall's surface at its offset and turn it to match.
+  const GEARS_X = 1.18;
+  const bend = Math.asin(GEARS_X / ROOM_RADIUS);
+  gears.position.set(GEARS_X, 1.25, ROOM_RADIUS * (1 - Math.cos(bend)) + 0.04);
+  gears.rotation.y = -bend;
 
   const door = group(surround, hinge, gears);
 

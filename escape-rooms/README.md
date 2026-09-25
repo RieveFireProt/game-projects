@@ -42,7 +42,7 @@ src/
     decor.js           atmosphere-only props
     textures.js        procedural canvas textures
     materials.js       shared materials
-    lighting.js        flames, sconces, moonbeam and dust
+    lighting.js        flames, sconces and moonbeam
     hotspots.js        what's clickable and what each click opens
     room.js            wires it together; state-driven animation and sounds
     puzzles.js         puzzle registry + hint ladders

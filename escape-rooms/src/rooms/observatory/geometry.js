@@ -160,7 +160,7 @@ export function buildGeometry(scene) {
 
   scene.add(new THREE.HemisphereLight(0x8a90b0, 0x4a3020, 0.7));
   const lights = createLights(scene);
-  const moonbeam = createMoonbeam(scene, {
+  createMoonbeam(scene, {
     moonPosition: MOON_POSITION,
     roomRadius: ROOM_RADIUS,
     wallHeight: WALL_HEIGHT,
@@ -221,7 +221,7 @@ export function buildGeometry(scene) {
   decor(D.instrumentCabinet(), { at: 203, inset: 0.24, collide: 0.45, say: 'cabinet', label: 'Instrument cabinet' });
   decor(D.engraving('moon'), { at: 222, inset: 0.02, y: 2.05, say: 'moon', label: 'Engraving' });
   const stove = decor(D.stove(), { at: 239, inset: 0.55, collide: 0.45, say: 'stove', label: 'Stove' });
-  decor(D.runner(1.3, 1.9, 3), { at: 258, inset: 1.35, turn: 0.2 });
+  decor(D.runner(1.3, 1.9, 3), { at: 265, inset: 1.2, turn: -0.3 });
   decor(D.armchair(), { at: 262, inset: 1.0, turn: -0.5, collide: 0.5, say: 'armchair', label: 'Armchair' });
   const side = D.sideTable();
   decor(side.table, { at: 272, inset: 1.05, collide: 0.28, say: 'teacup', label: 'Side table' });
@@ -283,7 +283,6 @@ export function buildGeometry(scene) {
     spawn: { x: 4.2, z: 1.3, yaw: THREE.MathUtils.degToRad(75) },
     update(t) {
       lights.update(t);
-      moonbeam.update(t);
     },
     objects,
   };

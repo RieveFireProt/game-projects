@@ -8,40 +8,66 @@ import { label, paint } from './textures.js';
 // Nothing here may look like a clue: no other clocks, lenses, letters or numbers.
 
 export function coatStand() {
+  const HOOK_Y = 1.6;
   const stand = group(
     lathe([[0.03, 0], [0.03, 1.6], [0.045, 1.65], [0.035, 1.75], [0, 1.8]], M.darkWood, 0, 0, 0, 12),
   );
   for (let i = 0; i < 3; i++) {
     const foot = box(0.04, 0.04, 0.32, M.darkWood, 0, 0.02, 0.14);
-    const pivot = group(foot);
-    pivot.rotation.y = (i / 3) * Math.PI * 2 + 0.5;
+    stand.add(place(group(foot), 0, 0, 0, (i / 3) * Math.PI * 2 + Math.PI / 3));
+  }
+  // Four brass hooks, each built pointing along +Z and turned into place.
+  const hooks = [-1, 1, 3, 5].map((k) => {
+    const pivot = place(group(), 0, 0, 0, (k * Math.PI) / 4);
+    const arm = cylinder(0.008, 0.008, 0.12, M.brass, 0, HOOK_Y + 0.02, 0.05, 6);
+    arm.rotation.x = Math.PI / 2 - 0.45;
+    pivot.add(arm, sphere(0.014, M.brass, 0, HOOK_Y + 0.05, 0.1, 8));
     stand.add(pivot);
+    return pivot;
+  });
+
+  // A heavy wool cloak hung from the front-left hook: a flattened, flared shell with
+  // folds that deepen towards the hem.
+  const HEM = 1.02;
+  const cloakGeometry = new THREE.LatheGeometry(
+    [[0.02, 0.02], [0.06, 0], [0.15, -0.08], [0.18, -0.2], [0.2, -0.5], [0.25, -0.85], [0.27, -HEM]].map(([r, y]) => new THREE.Vector2(r, y)),
+    40,
+  );
+  const v = cloakGeometry.attributes.position;
+  for (let i = 0; i < v.count; i++) {
+    const [x, y, z] = [v.getX(i), v.getY(i), v.getZ(i)];
+    const fold = 1 + 0.09 * Math.sin(Math.atan2(x, z) * 7) * Math.min(1, -y / 0.6);
+    v.setXYZ(i, x * fold, y, z * fold * 0.55);
   }
-  for (let i = 0; i < 4; i++) {
-    const hook = mesh(new THREE.TorusGeometry(0.06, 0.01, 6, 12, Math.PI), M.brass, 0, 1.62, 0);
-    hook.rotation.set(0, (i / 4) * Math.PI * 2, Math.PI / 2);
-    hook.translateX(-0.06);
-    stand.add(hook);
+  cloakGeometry.computeVertexNormals();
+  const cloak = mesh(cloakGeometry, mat(0x2f3440, { roughness: 1, side: THREE.DoubleSide }), 0, HOOK_Y + 0.06, 0.13);
+  hooks[0].add(cloak);
+
+  // A long scarf folded over the front-right hook, striped near the ends.
+  const scarfMat = mat(0x7a2a24, { roughness: 1 });
+  const stripeMat = mat(0xd8c9a8, { roughness: 1 });
+  const scarf = group(box(0.07, 0.014, 0.09, scarfMat, 0, HOOK_Y + 0.065, 0.1));
+  for (const [x, len] of [[-0.035, 0.6], [0.035, 0.48]]) {
+    const top = HOOK_Y + 0.06;
+    scarf.add(box(0.012, len, 0.09, scarfMat, x, top - len / 2, 0.1));
+    for (const d of [0.06, 0.1]) scarf.add(box(0.014, 0.015, 0.092, stripeMat, x, top - len + d, 0.1));
   }
-  // A long wool cloak and a scarf.
-  const cloak = mesh(new THREE.CylinderGeometry(0.06, 0.24, 0.95, 20, 1, true, 0, Math.PI * 1.5), mat(0x4a3526, { roughness: 1, side: THREE.DoubleSide }), 0.02, 1.12, 0.1);
-  cloak.rotation.y = -Math.PI * 0.3;
-  const scarf = mesh(new THREE.TorusGeometry(0.1, 0.03, 8, 20), mat(0x7a2a24, { roughness: 1 }), 0, 1.56, 0.08);
-  scarf.rotation.x = Math.PI / 2.4;
-  const tail = box(0.1, 0.5, 0.02, mat(0x7a2a24, { roughness: 1 }), 0.06, 1.3, 0.17);
+  hooks[1].add(scarf);
+
+  // A bowler on the finial and an umbrella leaning at the back.
   const hat = group(
     cylinder(0.14, 0.14, 0.01, M.wool, 0, 0, 0, 24),
     sphere(0.09, M.wool, 0, 0.02, 0, 16),
   );
   hat.children[1].scale.y = 0.8;
-  place(hat, -0.06, 1.8, -0.02, 0, 0.2, 0.3);
+  place(hat, 0, 1.74, 0, 0, 0.12, -0.08);
   const umbrella = group(
     cylinder(0.012, 0.012, 0.8, M.blackIron, 0, 0.4, 0, 6),
     mesh(new THREE.ConeGeometry(0.06, 0.6, 8, 1, true), mat(0x151515, { roughness: 0.8, side: THREE.DoubleSide }), 0, 0.45, 0),
     mesh(new THREE.TorusGeometry(0.03, 0.008, 6, 12, Math.PI), M.darkWood, 0.03, 0.8, 0),
   );
-  place(umbrella, -0.25, 0, 0.05, 0, 0, 0.12);
-  stand.add(cloak, scarf, tail, hat, umbrella);
+  place(umbrella, 0.2, 0, -0.12, 0, 0, -0.12);
+  stand.add(hat, umbrella);
   return stand;
 }
 
@@ -56,15 +82,18 @@ export function mapChest() {
     chest.add(box(1.1, 0.1, 0.02, M.darkWood, 0, y, 0.3));
     for (const x of [-0.3, 0.3]) chest.add(box(0.1, 0.018, 0.02, M.brass, x, y, 0.315));
   }
-  // Rolled charts and a small stack on top.
+  // Rolled charts stacked at the back right, a portfolio in front of them; the
+  // candelabrum stands clear of both on the left.
   const rand = seededRandom(13);
-  for (let i = 0; i < 4; i++) {
-    const roll = cylinder(0.035, 0.035, 0.7 + rand() * 0.2, M.paper, -0.25 + i * 0.07, 0.94, -0.05 + rand() * 0.1, 12);
-    roll.rotation.set(0, 0.2 * (rand() - 0.5), Math.PI / 2);
-    roll.position.y = 0.935 + (i % 2) * 0.05;
+  const ROLL_R = 0.035;
+  const rolls = [[-0.2, 0], [-0.13, 0], [-0.06, 0], [-0.165, 1]];
+  for (const [z, layer] of rolls) {
+    const length = 0.6 + rand() * 0.15;
+    const roll = cylinder(ROLL_R, ROLL_R, length, M.paper, 0.18 + (rand() - 0.5) * 0.06, 0.9 + ROLL_R + layer * ROLL_R * 1.75, z, 12);
+    roll.rotation.set(0.08 * (rand() - 0.5), 0, Math.PI / 2);
     chest.add(roll);
   }
-  chest.add(box(0.3, 0.06, 0.24, mat(0x3a2a1a), 0.38, 0.93, 0.05));
+  chest.add(box(0.34, 0.05, 0.2, mat(0x3a2a1a), 0.3, 0.925, 0.16));
 
   // Three-branch candelabrum. Flames are returned so they can flicker.
   const candelabrum = group(
@@ -84,7 +113,7 @@ export function mapChest() {
     candelabrum.add(flame);
     flames.push(flame);
   }
-  candelabrum.position.set(-0.4, 0.9, 0.05);
+  candelabrum.position.set(-0.4, 0.9, 0);
   chest.add(candelabrum);
   chest.userData.flames = flames;
   return chest;
@@ -561,7 +590,7 @@ export function runner(w, d, seed = 3) {
   rug.rotation.x = -Math.PI / 2;
   rug.position.y = 0.006;
   rug.receiveShadow = true;
-  return rug;
+  return group(rug); // so a yaw applied by the caller turns it flat on the floor
 }
 
 // A pile of books on the floor.
