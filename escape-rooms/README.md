@@ -47,8 +47,23 @@ src/
     room.js            wires it together; state-driven animation and sounds
     puzzles.js         puzzle registry + hint ladders
     items.js           satchel items
-    story.js           all in-world writing (letters, journal, books, flavour lines)
-    content/           one module per modal (clock, drawer, orrery, telegram, ...)
+    story.js           all in-world writing (letters, journal, notes, books, flavour lines)
+    content/           one module per modal (clock, drawer, orrery, telegraph, ...)
+public/narration/      recorded readings of Voss's letters and notes (generated)
+tools/                 scripted playthrough, narration generator
+```
+
+## Narration
+
+The "Read aloud" recordings are generated from `story.js` with [Kokoro](https://github.com/thewh1teagle/kokoro-onnx),
+an open-source text-to-speech model that runs locally. After changing any of Voss's
+writing, regenerate them (only changed lines are re-rendered):
+
+```
+pip install kokoro-onnx soundfile
+# download kokoro-v1.0.onnx and voices-v1.0.bin from the kokoro-onnx releases page (model-files-v1.0)
+node tools/narration.mjs > narration.json
+python tools/narrate.py narration.json kokoro-v1.0.onnx voices-v1.0.bin
 ```
 
 ## Dev tricks

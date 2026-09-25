@@ -8,6 +8,7 @@ import { createInteraction } from './engine/interaction.js';
 import { createModal } from './engine/modal.js';
 import { createHud } from './engine/hud.js';
 import { createAudio } from './engine/audio.js';
+import { createNarrator } from './engine/narrator.js';
 import { buildObservatory } from './rooms/observatory/room.js';
 
 const RELOCK_GRACE_MS = 400;
@@ -31,11 +32,13 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 200);
 
 // `game` is the shared context handed to every hotspot, puzzle and item.
-const state = createState('escape-rooms:observatory');
+// The save key changed when the room grew its second set of puzzles; old saves don't fit.
+const state = createState('escape-rooms:observatory:v2');
 const modal = createModal();
 const hud = createHud();
 const audio = createAudio();
-const game = { state, modal, hud, room: null, openModal: null, sfx: audio.play };
+const narrator = createNarrator();
+const game = { state, modal, hud, narrator, room: null, openModal: null, sfx: audio.play };
 
 const room = buildObservatory(scene, game);
 game.room = room;
@@ -82,7 +85,10 @@ const settings = (() => {
 })();
 const APPLY = {
   brightness: (v) => (renderer.toneMappingExposure = v),
-  volume: (v) => audio.setVolume(v),
+  volume: (v) => {
+    audio.setVolume(v);
+    narrator.setVolume(v);
+  },
 };
 for (const [key, apply] of Object.entries(APPLY)) {
   const input = document.getElementById(key);
@@ -140,6 +146,7 @@ player.onLockChange((locked) => {
   else if (!modal.isOpen() && !exit) hud.showOverlay(overlayMode());
 });
 modal.onClose(() => {
+  narrator.stop();
   if (exit) return;
   if (state.has('escaped')) hud.showOverlay('end');
   else resume();
@@ -165,13 +172,13 @@ function updateExit(dt) {
   // Look along the path a couple of metres ahead, tipping down as the stairs begin.
   const ahead = exit.curve.getPointAt(Math.min(1, k + 2 / exit.curve.getLength()), lookTarget);
   if (k > 0.97) ahead.addScaledVector(exit.curve.getTangentAt(1), 2);
-  lookTarget.y -= 0.3 + Math.max(0, k - 0.7) * 1.2;
+  lookTarget.y -= 0.3 + Math.max(0, k - 0.8) * 0.8;
   camera.lookAt(lookTarget);
   if (exit.t > exit.stepAt) {
     exit.stepAt += 0.55 / exit.duration;
     audio.play('step');
   }
-  fade.style.opacity = String(Math.max(0, (exit.t - 0.62) / 0.33));
+  fade.style.opacity = String(Math.max(0, (exit.t - 0.7) / 0.26));
   if (exit.t >= 1) {
     exit = null;
     document.body.classList.remove('cinematic');
@@ -275,6 +282,8 @@ renderer.setAnimationLoop((timestamp) => {
     }
   }
   audio.setFireDistance(player.position.distanceTo(room.firePosition));
+  audio.setMusicDistance(camera.position.distanceTo(room.gramophonePosition));
+  audio.setMusic(room.musicPlaying());
   hud.setPrompt(interaction.update(locked && !exit)?.label ?? null);
   if (room.update(dt)) renderer.shadowMap.needsUpdate = true;
 

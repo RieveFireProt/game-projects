@@ -88,10 +88,9 @@ export function buildDesk() {
   }, DESK_TOP);
   books.position.set(-0.6, 0, -0.2);
 
-  const notes = [
-    sheet(0.2, 0.26, scribbles(21), 0.2, DESK_TOP + 0.004, 0.1, -0.35),
-    sheet(0.2, 0.26, scribbles(22), 0.26, DESK_TOP + 0.005, 0.02, -0.1),
-  ];
+  const notes = [sheet(0.2, 0.26, scribbles(21), 0.2, DESK_TOP + 0.004, 0.1, -0.35)];
+  // The sheet Voss scrawled over in red ink (a clue, so it's its own hotspot).
+  const redSheet = sheet(0.2, 0.26, scribbles(22, { ink: 'rgba(200,40,40,0.85)' }), 0.3, DESK_TOP + 0.005, 0.2, -0.1);
   const spectacles = group(
     ...[-0.022, 0.022].map((x) => {
       const rim = mesh(new THREE.TorusGeometry(0.017, 0.0025, 6, 20), M.brass, x, 0, 0);
@@ -118,8 +117,8 @@ export function buildDesk() {
   );
   place(chair, -0.62, 0, 0.8, 0.6 + Math.PI);
 
-  desk.add(drawer, letter, lamp, inkwell, quill, books, ...notes, spectacles, chair);
-  return { desk, drawer, letter, lamp, lampFlame, chair };
+  desk.add(drawer, letter, redSheet, lamp, inkwell, quill, books, ...notes, spectacles, chair);
+  return { desk, drawer, letter, redSheet, lamp, lampFlame, chair };
 }
 
 // Vienna regulator style wall clock. Face and hands must keep showing the frozen time.
@@ -173,8 +172,10 @@ export function buildClock({ hours, minutes }) {
     sphere(0.012, M.brass, 0, 0.22, 0.095, 10));
 }
 
-// Tall bookcase. Returns the book Voss wrote so it can slide out once found.
-export function buildBookshelf() {
+// Tall bookcase with four shelves. The nine books the bookshelf puzzle shows for each
+// shelf are spread along it on pivots at their bottom front edge, so they can tip
+// forward; leverBooks[shelf][slot] (shelf 0 is the top one, as in the puzzle).
+export function buildBookshelf({ shelves = 4, perShelf = 9, vossAt = [2, 3] } = {}) {
   const rand = seededRandom(42);
   const spine = bookSpine();
   const colors = [0x6b2420, 0x23395b, 0x2f4a2a, 0x6b5a2a, 0x3b2a4a, 0x7a4a22, 0x1e1e24];
@@ -187,17 +188,18 @@ export function buildBookshelf() {
     box(1.5, 0.04, 0.46, M.darkWood, 0, 2.26, 0.01),
     box(1.45, 0.1, 0.42, M.darkWood, 0, 0.05, 0),
   );
-  let vossBook = null;
-  for (let row = 0; row < 5; row++) {
-    const y = 0.1 + row * 0.43;
+  const leverBooks = [];
+  const DEPTH = 0.25;
+  for (let row = 0; row < shelves; row++) {
+    const y = 0.1 + row * 0.53;
+    const index = shelves - 1 - row; // the puzzle counts shelves from the top
     shelf.add(box(1.36, 0.03, 0.38, M.mahogany, 0, y, 0));
+    const books = [];
     let x = -0.66;
-    let index = 0;
     while (x < 0.6) {
       // Leave the odd gap with a leaning book, like a real shelf.
       if (rand() < 0.05 && x < 0.4) {
-        const w = 0.04;
-        const lean = box(w, 0.3, 0.24, bookMats[Math.floor(rand() * bookMats.length)], x + 0.1, y + 0.16, 0.02);
+        const lean = box(0.04, 0.3, 0.24, bookMats[Math.floor(rand() * bookMats.length)], x + 0.1, y + 0.16, 0.02);
         lean.rotation.z = -0.35;
         shelf.add(lean);
         x += 0.16;
@@ -205,19 +207,45 @@ export function buildBookshelf() {
       }
       const w = 0.03 + rand() * 0.035;
       const h = 0.25 + rand() * 0.11;
-      const isVoss = row === 2 && index === 13;
-      const material = isVoss ? mat(0x234030, { map: spine, roughness: 0.6 }) : bookMats[Math.floor(rand() * bookMats.length)];
-      const book = box(w, h, 0.25, material, x + w / 2, y + 0.015 + h / 2, 0.02);
-      if (isVoss) {
-        vossBook = book;
-        book.userData.homeZ = book.position.z;
-      }
-      shelf.add(book);
+      books.push({ x: x + w / 2, w, h, material: bookMats[Math.floor(rand() * bookMats.length)] });
       x += w + 0.003;
-      index++;
     }
+    const levers = [];
+    const picked = new Set(Array.from({ length: perShelf }, (_, slot) => Math.round((slot * (books.length - 1)) / (perShelf - 1))));
+    books.forEach((b, i) => {
+      const slot = [...picked].indexOf(i);
+      const isVoss = index === vossAt[0] && slot === vossAt[1];
+      const material = isVoss ? mat(0x234030, { map: spine, roughness: 0.6 }) : b.material;
+      if (slot < 0) {
+        shelf.add(box(b.w, b.h, DEPTH, material, b.x, y + 0.015 + b.h / 2, 0.02));
+        return;
+      }
+      const pivot = group(box(b.w, b.h, DEPTH, material, 0, b.h / 2, -DEPTH / 2));
+      pivot.position.set(b.x, y + 0.015, 0.02 + DEPTH / 2);
+      shelf.add(pivot);
+      levers.push(pivot);
+    });
+    leverBooks[index] = levers;
   }
-  return { shelf, vossBook };
+  return { shelf, leverBooks };
+}
+
+// The priest-hole: a stone-lined cavity behind the wall, closed by a block of stone
+// that swings open on a hinge at its left edge. Placed with atWall at the sill height.
+export function buildNiche({ width, depth, y0, y1 }) {
+  const height = y1 - y0;
+  const inside = mat(0x6a5a50, { roughness: 1, side: THREE.BackSide });
+  const cavity = box(width + 0.02, height + 0.02, depth, inside, 0, height / 2, -depth / 2);
+  cavity.castShadow = false;
+  const card = new THREE.Mesh(new THREE.PlaneGeometry(0.13, 0.18), new THREE.MeshStandardMaterial({
+    map: scribbles(31, { w: 128, h: 180, top: 24 }), roughness: 1, emissive: 0x2a2418,
+  }));
+  place(card, 0.04, 0.1, -depth + 0.06, -0.15, -0.25);
+  const block = box(width, height, 0.06, M.stoneFront, width / 2, height / 2, -0.03);
+  const nicheDoor = group(block);
+  nicheDoor.position.x = -width / 2;
+  const niche = group(cavity, card, nicheDoor);
+  return { niche, nicheDoor };
 }
 
 export function buildStarChart(texture) {
@@ -274,16 +302,26 @@ export function buildOrrery() {
   const sun = sphere(0.05, mat(0xe8b44a, { emissive: 0x9a5a0a, emissiveIntensity: 0.8, metalness: 0.4, roughness: 0.3 }), 0, 1.15, 0);
   orrery.add(sun);
 
-  const planetColors = [0x9a9a9a, 0xd8c08a, 0x3f78b8, 0xb0502a];
+  const planetColors = [0x9a9a9a, 0xd8c08a, 0x3f78b8, 0xb0502a, 0xc89a68, 0xd8c890];
   const planets = [];
-  [0.1, 0.16, 0.23, 0.3].forEach((radius, i) => {
-    const y = 1.08 - i * 0.03;
+  let saturnBall = null;
+  [0.07, 0.11, 0.15, 0.19, 0.245, 0.3].forEach((radius, i) => {
+    const y = 1.1 - i * 0.025;
     const ring = mesh(new THREE.TorusGeometry(radius, 0.003, 6, 64), M.brass, 0, y, 0);
     ring.rotation.x = Math.PI / 2;
     const arm = box(radius, 0.004, 0.006, M.brass, radius / 2, 0, 0);
     const post = cylinder(0.003, 0.003, 0.03, M.brass, radius, 0.015, 0, 6);
-    const planet = sphere(0.016 + i * 0.004, mat(planetColors[i], { roughness: 0.5 }), radius, 0.035, 0, 16);
-    const pivot = group(arm, post, planet);
+    const size = [0.014, 0.018, 0.019, 0.016, 0.03, 0.025][i];
+    const ball = group(sphere(size, mat(planetColors[i], { roughness: 0.5 }), 0, 0, 0, 16));
+    ball.position.set(radius, 0.03 + size, 0);
+    if (i === 5) {
+      const rings = mesh(new THREE.TorusGeometry(size * 1.7, size * 0.18, 4, 32), mat(0xb8a060, { roughness: 0.4 }));
+      rings.rotation.x = Math.PI / 2 - 0.35;
+      rings.scale.z = 0.25;
+      ball.add(rings);
+      saturnBall = ball;
+    }
+    const pivot = group(arm, post, ball);
     pivot.position.y = y;
     orrery.add(ring, pivot);
     planets.push(pivot);
@@ -299,7 +337,7 @@ export function buildOrrery() {
   candle.position.set(0.3, 0, -0.18);
 
   table.add(candle, orrery);
-  return { table, orrery, planets, baseDrawer, candleFlame };
+  return { table, orrery, planets, saturnBall, baseDrawer, candleFlame };
 }
 
 export function buildTelegramTable() {
@@ -308,7 +346,7 @@ export function buildTelegramTable() {
     box(0.54, 0.08, 0.54, M.darkWood, 0, 0.68, 0),
     ...legs(0.56, 0.56, 0.66, 0.04, M.darkWood, 0.02),
   );
-  // Telegraph key and sounder on a small board.
+  // Telegraph key, sounder and the register that prints what is sent onto paper tape.
   const key = group(
     box(0.2, 0.02, 0.1, M.darkWood, 0, 0.768, 0),
     box(0.14, 0.008, 0.012, M.brass, 0, 0.788, 0),
@@ -321,13 +359,22 @@ export function buildTelegramTable() {
     cylinder(0.016, 0.016, 0.05, M.brass, 0.03, 0.795, 0, 10),
     box(0.1, 0.008, 0.02, M.brass, 0, 0.825, 0),
   );
-  place(key, 0.13, 0, -0.16, 0.2);
-  place(sounder, -0.14, 0, -0.18, -0.1);
-  const telegraphKey = group(key, sounder);
-  table.add(telegraphKey);
-
-  const telegram = sheet(0.22, 0.16, scribbles(9, { w: 320, h: 230, paper: '#e6d6a8', header: 'POST OFFICE TELEGRAPHS', top: 26 }), -0.06, 0.762, 0.1, -0.15);
-  return { table, telegram, telegraphKey };
+  const reel = cylinder(0.05, 0.05, 0.025, M.paper, -0.07, 0.86, 0, 20);
+  reel.rotation.x = Math.PI / 2;
+  const register = group(
+    box(0.2, 0.08, 0.1, M.darkWood, 0, 0.8, 0),
+    box(0.16, 0.01, 0.08, M.brass, 0, 0.845, 0),
+    reel,
+    box(0.022, 0.002, 0.3, M.paper, 0.08, 0.758, 0.14),
+  );
+  register.children[3].rotation.x = 0.05;
+  place(key, 0.15, 0, -0.16, 0.2);
+  place(sounder, -0.16, 0, -0.2, -0.1);
+  place(register, -0.12, 0, 0.02, 0.3);
+  const telegram = sheet(0.2, 0.15, scribbles(9, { w: 320, h: 230, paper: '#e6d6a8', header: 'POST OFFICE TELEGRAPHS', top: 26 }), 0.12, 0.762, 0.16, -0.15);
+  const telegraph = group(key, sounder, register, telegram);
+  table.add(telegraph);
+  return { table, telegraph };
 }
 
 // The great telescope: cast-iron pier, fork mount, brass tube aimed at the slit.

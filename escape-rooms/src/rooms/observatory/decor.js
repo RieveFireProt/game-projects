@@ -77,11 +77,23 @@ export function mapChest() {
     box(1.26, 0.04, 0.66, M.darkWood, 0, 0.88, 0),
     box(1.22, 0.04, 0.62, M.darkWood, 0, 0.02, 0),
   );
-  for (let i = 0; i < 6; i++) {
+  // Six chart drawers; the bottom one is locked and slides out once opened.
+  for (let i = 1; i < 6; i++) {
     const y = 0.12 + i * 0.125;
     chest.add(box(1.1, 0.1, 0.02, M.darkWood, 0, y, 0.3));
     for (const x of [-0.3, 0.3]) chest.add(box(0.1, 0.018, 0.02, M.brass, x, y, 0.315));
   }
+  const drawer = group(
+    box(1.1, 0.1, 0.02, M.darkWood, 0, 0.12, 0.3),
+    box(1.06, 0.08, 0.5, M.darkWood, 0, 0.12, 0.05),
+    box(0.9, 0.004, 0.4, M.paper, 0, 0.165, 0.05),
+    box(0.09, 0.09, 0.012, M.brass, 0, 0.12, 0.314),
+    cylinder(0.018, 0.018, 0.02, M.darkBrass, 0, 0.12, 0.32, 12),
+  );
+  drawer.children[4].rotation.x = Math.PI / 2;
+  for (const x of [-0.3, 0.3]) drawer.add(box(0.1, 0.018, 0.02, M.brass, x, 0.12, 0.315));
+  chest.add(drawer);
+  chest.userData.drawer = drawer;
   // Rolled charts stacked at the back right, a portfolio in front of them; the
   // candelabrum stands clear of both on the left.
   const rand = seededRandom(13);
@@ -277,36 +289,45 @@ export function globe() {
   return group(stand, ball, meridian, horizon);
 }
 
-export function trunk() {
-  const t = group(
-    box(0.9, 0.45, 0.5, mat(0x3a2a1a, { roughness: 0.7 }), 0, 0.26, 0),
-    mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.9, 20, 1, false, 0, Math.PI), mat(0x3a2a1a, { roughness: 0.7 }), 0, 0.485, 0),
-  );
-  t.children[1].rotation.set(0, 0, Math.PI / 2);
-  t.children[1].scale.set(0.45, 1, 1);
-  for (const x of [-0.28, 0.28]) {
-    t.add(box(0.06, 0.47, 0.52, M.leather, x, 0.26, 0));
-  }
+// Steamer trunk with a domed lid on a hinge at the back, eclipse-expedition labels on
+// the front (place names only) and a letter lock on the hasp.
+export function trunk(labels) {
+  const hide = mat(0x3a2a1a, { roughness: 0.7 });
+  const t = group(box(0.9, 0.45, 0.5, hide, 0, 0.26, 0));
+  for (const x of [-0.28, 0.28]) t.add(box(0.06, 0.47, 0.52, M.leather, x, 0.26, 0));
   for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) t.add(box(0.06, 0.06, 0.06, M.brass, x * 0.44, 0.06, z * 0.24));
-  t.add(box(0.08, 0.06, 0.02, M.brass, 0, 0.46, 0.255));
-  // Shipping labels: place names only.
-  const labels = [['MADEIRA', '#b8462e'], ['CAPE TOWN', '#2e5a8a'], ['TENERIFE', '#c89a2e']];
-  labels.forEach(([name, color], i) => {
-    const l = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.1), new THREE.MeshStandardMaterial({
-      map: label(name, { w: 160, h: 100, bg: color, color: '#f4ead2', size: 0.2, weight: 'bold' }),
+  t.add(box(0.08, 0.1, 0.02, M.brass, 0, 0.44, 0.255));
+  const colors = ['#b8462e', '#2e5a8a', '#c89a2e', '#3a6a3a'];
+  labels.forEach((name, i) => {
+    const l = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.09), new THREE.MeshStandardMaterial({
+      map: label(name, { w: 160, h: 96, bg: colors[i], color: '#f4ead2', size: 0.22, weight: 'bold' }),
       roughness: 1,
     }));
-    place(l, -0.14 + i * 0.16, 0.25 + (i % 2) * 0.06, 0.252, 0, 0, (i - 1) * 0.15);
+    place(l, [-0.34, -0.14, 0.14, 0.34][i] * 0.9, 0.2 + (i % 2) * 0.1, 0.252, 0, 0, (i - 1.5) * 0.1);
     t.add(l);
   });
-  // An unlit hurricane lantern on the lid.
+  // The lid pivots about its back edge.
+  const dome = mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.9, 20, 1, false, 0, Math.PI), hide, 0, 0, 0.25);
+  dome.rotation.set(0, 0, Math.PI / 2);
+  dome.scale.set(0.45, 1, 1);
+  const lid = group(dome, box(0.08, 0.06, 0.02, M.brass, 0, -0.02, 0.505));
+  for (const x of [-0.28, 0.28]) {
+    const band = mesh(new THREE.CylinderGeometry(0.255, 0.255, 0.06, 20, 1, false, 0, Math.PI), M.leather, x, 0, 0.25);
+    band.rotation.set(0, 0, Math.PI / 2);
+    band.scale.set(0.46, 1, 1);
+    lid.add(band);
+  }
+  lid.position.set(0, 0.485, -0.25);
+  t.add(lid);
+  t.userData.lid = lid;
+  // An unlit hurricane lantern on the floor beside it.
   const lantern = group(
     cylinder(0.06, 0.07, 0.04, M.blackIron, 0, 0.02, 0, 12),
     lathe([[0.03, 0], [0.055, 0.06], [0.045, 0.14], [0.03, 0.18]], M.glass, 0, 0.04, 0, 12),
     cylinder(0.04, 0.05, 0.04, M.blackIron, 0, 0.24, 0, 12),
     mesh(new THREE.TorusGeometry(0.05, 0.005, 6, 12, Math.PI), M.blackIron, 0, 0.26, 0),
   );
-  lantern.position.set(0.25, 0.6, -0.02);
+  lantern.position.set(0.58, 0, 0.1);
   t.add(lantern);
   return t;
 }
@@ -528,10 +549,19 @@ export function instrumentCabinet() {
   );
   microscope.children[2].rotation.x = 0.3;
   place(microscope, -0.18, 1.14, 0);
-  const glassFront = box(0.76, 1.72, 0.01, M.glass, 0, 0.96, 0.2);
+  // Glazed door on a hinge at its left edge, with a small brass lock on the right.
+  const glassFront = box(0.76, 1.72, 0.01, M.glass, 0.38, 0.96, 0);
   glassFront.castShadow = false;
-  c.add(sextant, spyglass, astrolabe, microscope, glassFront,
-    box(0.02, 1.72, 0.02, M.mahogany, 0, 0.96, 0.21));
+  const door = group(
+    glassFront,
+    box(0.02, 1.72, 0.02, M.mahogany, 0.38, 0.96, 0.01),
+    box(0.76, 0.03, 0.025, M.mahogany, 0.38, 0.1, 0.01),
+    box(0.76, 0.03, 0.025, M.mahogany, 0.38, 1.82, 0.01),
+    box(0.03, 0.06, 0.012, M.brass, 0.73, 0.96, 0.018),
+  );
+  door.position.set(-0.38, 0, 0.2);
+  c.add(sextant, spyglass, astrolabe, microscope, door);
+  c.userData.door = door;
   // A few books lying flat.
   c.add(box(0.2, 0.05, 0.26, mat(0x3a2020), 0.2, 0.66, 0), box(0.18, 0.04, 0.24, mat(0x20303a), 0.2, 0.705, 0));
   return c;
@@ -613,3 +643,43 @@ export function bookPile(seed = 8) {
   return pile;
 }
 
+
+// Berliner gramophone on a small cabinet: turntable, tone arm and a brass horn. The
+// record is returned so it can turn while the music plays.
+export function gramophone() {
+  const g = group(
+    box(0.5, 0.62, 0.42, M.mahogany, 0, 0.31, 0),
+    box(0.54, 0.03, 0.46, M.darkWood, 0, 0.635, 0),
+    box(0.42, 0.1, 0.36, M.darkWood, 0, 0.7, 0),
+    box(0.46, 0.02, 0.4, M.mahogany, 0, 0.76, 0),
+  );
+  for (const x of [-0.12, 0.12]) g.add(box(0.2, 0.44, 0.012, M.darkWood, x, 0.31, 0.215));
+  const record = group(
+    cylinder(0.15, 0.15, 0.006, mat(0x0c0c0e, { roughness: 0.25, metalness: 0.2 }), 0, 0, 0, 40),
+    cylinder(0.045, 0.045, 0.007, mat(0x8a2a20, { roughness: 0.8 }), 0, 0.0005, 0, 24),
+    box(0.012, 0.008, 0.03, mat(0xe8dcc0), 0.03, 0.001, 0),
+  );
+  record.position.set(-0.03, 0.776, 0.02);
+  const crank = group(cylinder(0.008, 0.008, 0.12, M.brass, 0, 0, 0.06, 8), cylinder(0.012, 0.012, 0.05, M.darkWood, 0, 0.02, 0.12, 8));
+  crank.children[0].rotation.x = Math.PI / 2;
+  crank.position.set(0.26, 0.7, 0);
+  crank.rotation.y = Math.PI / 2;
+  // Tone arm from a post at the back right, swinging over the record to the horn's elbow.
+  const arm = group(
+    cylinder(0.014, 0.018, 0.08, M.brass, 0.17, 0.8, -0.14, 12),
+    strut([0.17, 0.84, -0.14], [0.02, 0.8, 0.08], 0.008, M.brass),
+    box(0.03, 0.03, 0.04, M.brass, 0.02, 0.795, 0.08),
+  );
+  // Horn: a brass bell rising from the back and flaring forward.
+  const bell = lathe([[0.02, 0], [0.024, 0.12], [0.04, 0.24], [0.07, 0.34], [0.13, 0.42], [0.22, 0.46], [0.23, 0.465]], mat(0xc49a50, { metalness: 0.9, roughness: 0.28, side: THREE.DoubleSide }), 0, 0, 0, 32);
+  const horn = group(bell);
+  horn.position.set(0.17, 0.85, -0.14);
+  horn.rotation.set(0.95, 0, 0);
+  const mouth = new THREE.Object3D();
+  mouth.position.set(0, 0.45, 0);
+  horn.add(mouth);
+  g.add(record, crank, arm, horn);
+  g.userData.record = record;
+  g.userData.horn = mouth;
+  return g;
+}

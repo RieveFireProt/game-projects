@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { box, cylinder, group, mergeStatic, mesh, place, seededRandom, unclickable } from '../../engine/build.js';
-import { ROOM_RADIUS, WALL_HEIGHT, SLIT_HALF_WIDTH, DOOR_GAP, atWall, colliderAt } from './layout.js';
+import { box, cylinder, group, lathe, mergeStatic, mesh, place, seededRandom, unclickable } from '../../engine/build.js';
+import { ROOM_RADIUS, WALL_HEIGHT, SLIT_HALF_WIDTH, DOOR_GAP, NICHE, atWall, colliderAt } from './layout.js';
 import { M, stoneView } from './materials.js';
 import { createLights, createMoonbeam, flameMesh, sconceMesh } from './lighting.js';
 import { glow, moonFace } from './textures.js';
 import { CLOCK_TIME } from './content/clock.js';
 import { drawStarChart } from './content/starChart.js';
-import { FLAVOR } from './story.js';
+import { FLAVOR, TRUNK_LABELS } from './story.js';
 import * as F from './furniture.js';
 import * as D from './decor.js';
 
@@ -22,10 +22,29 @@ const TAU = Math.PI * 2;
 
 // A band of wall (open cylinder, seen from inside) that leaves the doorway clear.
 function wallBand(radius, height, y, material, gap = DOOR_GAP) {
-  const geometry = new THREE.CylinderGeometry(radius, radius, height, 128, 1, true, Math.PI / 2 + gap / 2, TAU - gap);
+  return wallArc(radius, height, y, material, Math.PI / 2 + gap / 2, TAU - gap);
+}
+
+// Part of a band, from cylinder angle `start` (0 at +Z, turning towards +X) for `length`.
+function wallArc(radius, height, y, material, start, length) {
+  const geometry = new THREE.CylinderGeometry(radius, radius, height, Math.max(2, Math.ceil((128 * length) / TAU)), 1, true, start, length);
   const band = mesh(geometry, material, 0, y + height / 2, 0);
   band.castShadow = true;
   return band;
+}
+
+// The stone wall, with the doorway and the priest-hole left open.
+function stoneWall() {
+  const nicheAt = Math.PI / 2 - THREE.MathUtils.degToRad(NICHE.at) + TAU;
+  const half = NICHE.width / ROOM_RADIUS / 2;
+  const start = Math.PI / 2 + DOOR_GAP / 2;
+  const end = Math.PI / 2 + TAU - DOOR_GAP / 2;
+  return group(
+    wallArc(ROOM_RADIUS, WALL_HEIGHT, 0, M.stone, start, nicheAt - half - start),
+    wallArc(ROOM_RADIUS, WALL_HEIGHT, 0, M.stone, nicheAt + half, end - nicheAt - half),
+    wallArc(ROOM_RADIUS, NICHE.y0, 0, M.stone, nicheAt - half, half * 2),
+    wallArc(ROOM_RADIUS, WALL_HEIGHT - NICHE.y1, NICHE.y1, M.stone, nicheAt - half, half * 2),
+  );
 }
 
 // A horizontal moulding running round the wall from fromDeg to toDeg.
@@ -50,7 +69,7 @@ function buildShell(scene) {
   rug.receiveShadow = true;
 
   const doorDeg = THREE.MathUtils.radToDeg(DOOR_GAP / 2) + 2;
-  const wall = wallBand(ROOM_RADIUS, WALL_HEIGHT, 0, M.stone);
+  const wall = stoneWall();
   const aboveDoor = mesh(
     new THREE.CylinderGeometry(ROOM_RADIUS, ROOM_RADIUS, WALL_HEIGHT - DOOR_HEIGHT, 8, 1, true, Math.PI / 2 - DOOR_GAP / 2, DOOR_GAP),
     stoneView(0.6, 1.8, THREE.BackSide),
@@ -131,22 +150,83 @@ function buildSky(scene) {
   scene.add(unclickable(stars), unclickable(moon), unclickable(halo));
 }
 
-// The stairwell revealed when the door swings open at the end.
+// The stairwell revealed when the door swings open at the end: a short flight down to
+// a landing lit by a lantern, where the stairs turn right and carry on down into the
+// dark. The turn keeps the bottom out of sight from the room and the walk out.
+export const STAIRS = {
+  w: 1.3, // width of both flights
+  rise: 0.18,
+  run: 0.3,
+  top: ROOM_RADIUS - 0.02, // where the upper landing meets the doorway
+  upperLanding: 0.9,
+  flight1: 5,
+  flight2: 12,
+};
+STAIRS.landingX = STAIRS.top + STAIRS.upperLanding + STAIRS.flight1 * STAIRS.run; // start of the lower landing
+STAIRS.landingY = -STAIRS.flight1 * STAIRS.rise;
+STAIRS.endX = STAIRS.landingX + STAIRS.w; // far wall, facing the door
+
 function buildStairwell(scene) {
-  const w = 1.3;
-  const start = ROOM_RADIUS - 0.02;
-  const length = 3;
-  const walls = mesh(new THREE.BoxGeometry(length, 4, w), stoneView(1.5, 4, THREE.BackSide), start + length / 2, 0.5, 0);
-  const landing = box(1.0, 1.5, w, stoneView(0.5, 0.75), start + 0.5, -0.75, 0);
-  const steps = group();
-  for (let i = 0; i < 8; i++) {
-    const top = -0.18 * (i + 1);
-    steps.add(box(0.3, 1.5 + top, w, stoneView(0.15, 0.4), start + 1.15 + i * 0.3, (top - 1.5) / 2, 0));
+  const { w, rise, run, top, upperLanding, flight1, flight2, landingX, landingY, endX } = STAIRS;
+  const half = w / 2;
+  const T = 0.2; // wall thickness
+  const CEILING = 2.4;
+  const FLOOR = landingY - flight2 * rise - 0.4;
+  const flight2End = half + flight2 * run;
+  const parts = group();
+  // Stone darkens pair of steps by pair of steps down the second flight, so it sinks
+  // into the dark instead of ending anywhere.
+  const shadeAt = (i) => Math.max(0, 1 - (Math.floor(i / 2) * 2 + 1) / 8) ** 1.6;
+  // A solid block of stone from x0..x1, y0..y1, z0..z1.
+  const slab = (x0, x1, y0, y1, z0, z1, shade = 1) => {
+    const [sx, sy, sz] = [x1 - x0, y1 - y0, z1 - z0];
+    const material = stoneView(Math.max(sx, sz) / 1.6, sy / 1.6);
+    material.color.setScalar(shade);
+    parts.add(box(sx, sy, sz, material, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2));
+  };
+
+  // Upper landing, first flight (down along +X), lower landing.
+  slab(top, top + upperLanding, FLOOR, 0, -half, half);
+  for (let i = 0; i < flight1; i++) {
+    const x = top + upperLanding + i * run;
+    slab(x, x + run, FLOOR, -rise * (i + 1), -half, half);
   }
+  slab(landingX, endX, FLOOR, landingY, -half, half + 0.001);
+
+  // Walls of the first flight and the landing, the far wall facing the door, ceiling.
+  slab(top, endX + T, FLOOR, CEILING, -half - T, -half);
+  slab(top, landingX, FLOOR, CEILING, half, half + T);
+  slab(endX, endX + T, FLOOR, CEILING, -half, half);
+  slab(top, endX + T, CEILING, CEILING + T, -half - T, half);
+
+  // Second flight, turning right (+Z) off the landing and on down, with its walls and
+  // ceiling in sections that darken as they go.
+  for (let i = 0; i < flight2; i++) {
+    const z = half + i * run;
+    slab(landingX, endX, FLOOR, landingY - rise * (i + 1), z, z + run, shadeAt(i));
+  }
+  for (let i = 0; i < flight2; i += 2) {
+    const [z0, z1] = [half + i * run, half + (i + 2) * run];
+    const shade = shadeAt(i);
+    slab(landingX - T, landingX, FLOOR, CEILING, i ? z0 : half + T, z1, shade);
+    slab(endX, endX + T, FLOOR, CEILING, z0, z1, shade);
+    slab(landingX - T, endX + T, CEILING, CEILING + T, z0, z1, shade);
+  }
+  slab(landingX - T, endX + T, FLOOR, CEILING, flight2End, flight2End + T, 0);
+
+  // The lantern on the far wall, straight ahead through the door.
+  const lanternY = landingY + 1.75;
+  const lanternZ = -0.25;
   const flame = flameMesh(1.2);
-  flame.position.set(start + 0.8, 1.9, w / 2 - 0.12);
-  const bracket = box(0.06, 0.2, 0.12, M.blackIron, start + 0.8, 1.8, w / 2 - 0.06);
-  scene.add(walls, landing, steps, flame, bracket);
+  flame.position.set(endX - 0.16, lanternY, lanternZ);
+  const bracket = group(
+    box(0.03, 0.22, 0.1, M.blackIron, endX - 0.015, lanternY - 0.02, lanternZ),
+    box(0.14, 0.02, 0.02, M.blackIron, endX - 0.08, lanternY - 0.1, lanternZ),
+    cylinder(0.035, 0.045, 0.03, M.blackIron, endX - 0.16, lanternY - 0.09, lanternZ, 12),
+    lathe([[0.03, 0], [0.05, 0.05], [0.045, 0.13], [0.025, 0.17]], M.glass, endX - 0.16, lanternY - 0.075, lanternZ, 12),
+    cylinder(0.03, 0.04, 0.03, M.blackIron, endX - 0.16, lanternY + 0.11, lanternZ, 12),
+  );
+  scene.add(parts, flame, bracket);
   return { flame };
 }
 
@@ -169,22 +249,24 @@ export function buildGeometry(scene) {
 
   // --- Puzzle furniture ------------------------------------------------------
 
-  const { desk, drawer, letter, lampFlame, chair: deskChair } = F.buildDesk();
+  const { desk, drawer, letter, redSheet, lampFlame, chair: deskChair } = F.buildDesk();
   atWall(desk, 60, 0.7);
   const clock = atWall(F.buildClock(CLOCK_TIME), 60, 0.08, 2.1);
 
-  const { shelf: bookshelf, vossBook } = F.buildBookshelf();
+  const { shelf: bookshelf, leverBooks } = F.buildBookshelf();
   atWall(bookshelf, 115, 0.24);
+  const { niche, nicheDoor } = F.buildNiche(NICHE);
+  atWall(niche, NICHE.at, 0, NICHE.y0);
 
-  const { starChart, chartMesh } = F.buildStarChart(starChartTexture());
+  const chartTexture = starChartTexture();
+  const { starChart, chartMesh } = F.buildStarChart(chartTexture);
   atWall(starChart, 160, 0.04, 1.9);
 
-  const { table: orreryTable, orrery, planets, baseDrawer, candleFlame } = F.buildOrrery();
+  const { table: orreryTable, orrery, planets, saturnBall, baseDrawer, candleFlame } = F.buildOrrery();
   atWall(orreryTable, 215, 1.7);
 
-  const { table: telegramTable, telegram, telegraphKey } = F.buildTelegramTable();
+  const { table: telegramTable, telegraph } = F.buildTelegramTable();
   atWall(telegramTable, 290, 1.0);
-  telegramTable.add(telegram);
 
   const { telescope, lens: telescopeLens, hourPointer, heightPointer } = F.buildTelescope();
 
@@ -195,7 +277,7 @@ export function buildGeometry(scene) {
   const { crate, eyepieceCase, lid: eyepieceLid } = F.buildEyepieceCase();
   const crateGroup = place(group(crate, eyepieceCase), 0.95, 0, -1.05, 0.4);
 
-  scene.add(desk, clock, bookshelf, starChart, orreryTable, telegramTable, telescope, door, doorStar, crateGroup);
+  scene.add(desk, clock, bookshelf, niche, starChart, orreryTable, telegramTable, telescope, door, doorStar, crateGroup);
 
   // --- Decoration ------------------------------------------------------------
 
@@ -210,31 +292,31 @@ export function buildGeometry(scene) {
     return object;
   };
 
-  decor(D.coatStand(), { at: 22, inset: 0.35, collide: 0.3, say: 'coatStand', label: 'Coat stand' });
-  decor(D.portrait(), { at: 80, inset: 0.02, y: 1.95, say: 'portrait', label: 'Portrait' });
+  // Decor that hides something is clickable through hotspots.js rather than a musing.
+  const coatStand = decor(D.coatStand(), { at: 22, inset: 0.35, collide: 0.3 });
+  const portrait = decor(D.portrait(), { at: 80, inset: 0.02, y: 1.95 });
   decor(D.globe(), { at: 92, inset: 0.8, turn: 0.6, collide: 0.35, say: 'globe', label: 'Globe' });
-  decor(D.bookPile(8), { at: 124, inset: 0.45, turn: 0.3 });
-  const mapChest = decor(D.mapChest(), { at: 137, inset: 0.32, collide: 0.55, say: 'mapChest', label: 'Map chest' });
+  decor(D.bookPile(8), { at: 128, inset: 0.35, turn: 0.3 });
+  const mapChest = decor(D.mapChest(), { at: 137, inset: 0.32, collide: 0.55 });
   decor(D.winch(), { at: 176, inset: 0.02, say: 'winch', label: 'Dome winch' });
-  decor(D.ladder(3.9, 0.85), { at: 189, inset: 0.02, collide: 0, say: 'ladder', label: 'Ladder' });
+  const ladder = decor(D.ladder(3.9, 0.85), { at: 189, inset: 0.02 });
   colliders.push(colliderAt(atWall(new THREE.Object3D(), 189, 0.6), 0.3));
-  decor(D.instrumentCabinet(), { at: 203, inset: 0.24, collide: 0.45, say: 'cabinet', label: 'Instrument cabinet' });
+  const cabinet = decor(D.instrumentCabinet(), { at: 203, inset: 0.24, collide: 0.45 });
   decor(D.engraving('moon'), { at: 222, inset: 0.02, y: 2.05, say: 'moon', label: 'Engraving' });
   const stove = decor(D.stove(), { at: 239, inset: 0.55, collide: 0.45, say: 'stove', label: 'Stove' });
+  const gramophone = decor(D.gramophone(), { at: 251, inset: 0.4, collide: 0.35 });
   decor(D.runner(1.3, 1.9, 3), { at: 265, inset: 1.2, turn: -0.3 });
   decor(D.armchair(), { at: 262, inset: 1.0, turn: -0.5, collide: 0.5, say: 'armchair', label: 'Armchair' });
-  const side = D.sideTable();
-  decor(side.table, { at: 272, inset: 1.05, collide: 0.28, say: 'teacup', label: 'Side table' });
+  const sideTable = decor(D.sideTable().table, { at: 272, inset: 1.05, collide: 0.28 });
   decor(D.engraving('saturn'), { at: 280, inset: 0.02, y: 2.05, say: 'saturn', label: 'Engraving' });
-  decor(D.fern(), { at: 305, inset: 0.35, collide: 0.25, say: 'fern', label: 'Fern' });
-  decor(D.trunk(), { at: 321, inset: 0.4, collide: 0.5, say: 'trunk', label: 'Steamer trunk' });
+  const fern = decor(D.fern(), { at: 305, inset: 0.35, collide: 0.25 });
+  const trunk = decor(D.trunk(TRUNK_LABELS), { at: 321, inset: 0.4, collide: 0.5 });
   decor(D.barometer(), { at: 344, inset: 0.03, y: 1.55, say: 'barometer', label: 'Barometer' });
   decor(D.bookPile(4), { at: 330, inset: 1.0, turn: 1.2 });
   const obsChair = place(D.observingChair(), 1.35, 0, 0.55, -Math.PI / 2);
   decor(obsChair, { collide: 0.3, say: 'observingChair', label: 'Observing stool' });
 
   flavor.push(
-    { object: telegraphKey, label: 'Telegraph key', line: FLAVOR.telegraph },
     { object: crate, label: 'Packing crate', line: FLAVOR.crate },
     { object: deskChair, label: 'Desk chair', line: FLAVOR.deskChair },
   );
@@ -269,11 +351,14 @@ export function buildGeometry(scene) {
 
   // Everything that moves or can be clicked keeps its own node; the rest is merged.
   const objects = {
-    desk, drawer, letter, clock, bookshelf, vossBook, starChart, chartMesh, orrery, planets, baseDrawer,
-    telegram, telescope, telescopeLens, hourPointer, heightPointer, door, doorHinge, doorStar,
-    eyepieceCase, eyepieceLid, stairLight,
+    desk, drawer, letter, redSheet, clock, bookshelf, leverBooks, niche, nicheDoor, starChart, chartMesh,
+    orrery, planets, saturnBall, baseDrawer, telegraph, telescope, telescopeLens, hourPointer, heightPointer,
+    door, doorHinge, doorStar, eyepieceCase, eyepieceLid, stairLight,
+    coatStand, portrait, mapChest, mapDrawer: mapChest.userData.drawer, ladder, cabinet,
+    cabinetDoor: cabinet.userData.door, gramophone, record: gramophone.userData.record, sideTable, fern,
+    trunk, trunkLid: trunk.userData.lid,
   };
-  for (const o of [...Object.values(objects).flat(), ...flavor.map((f) => f.object)]) o.userData.keep = true;
+  for (const o of [...Object.values(objects).flat(2), ...flavor.map((f) => f.object)]) o.userData.keep = true;
   mergeStatic(scene);
 
   return {
@@ -284,6 +369,12 @@ export function buildGeometry(scene) {
     update(t) {
       lights.update(t);
     },
+    // Redraws the chart on the wall with the players' threads.
+    redrawChart(options) {
+      drawStarChart(chartTexture.image.getContext('2d'), chartTexture.image.width, chartTexture.image.height, options);
+      chartTexture.needsUpdate = true;
+    },
+    gramophonePosition: gramophone.userData.horn.getWorldPosition(new THREE.Vector3()),
     objects,
   };
 }

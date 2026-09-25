@@ -1,5 +1,5 @@
 import { el } from '../../../engine/ui.js';
-import { NIGHT_OF_DISCOVERY, NUMERALS, PLANETS, POSITIONS } from './orreryData.js';
+import { INNER, NIGHT_OF_DISCOVERY, NUMERALS, PLANETS, POSITIONS } from './orreryData.js';
 
 // The orrery page from Voss's journal, torn in two. Players drag and turn the
 // halves until the torn edges meet; the halves then become one item.
@@ -8,7 +8,7 @@ const W = 400;
 const H = 540;
 const CX = 200;
 const CY = 300;
-const RINGS = [45, 75, 105, 135];
+const RINGS = [40, 64, 88, 112, 136, 156];
 const SNAP = 40; // SVG units; generous so the join never feels fiddly
 
 const TEAR = (() => {
@@ -27,28 +27,28 @@ const polar = (stop, r) => {
 // The diagram itself, in page coordinates.
 function pageContent() {
   const numerals = NUMERALS.map((n, i) => {
-    const [x, y] = polar(i, 162);
+    const [x, y] = polar(i, 176);
     return `<text x="${x}" y="${y}" class="pg-numeral">${n}</text>`;
   }).join('');
-  const rings = RINGS.map((r) => `<circle cx="${CX}" cy="${CY}" r="${r}" class="pg-ring"/>`).join('');
-  const planets = PLANETS.map((p, i) => {
+  const rings = RINGS.map((r, i) => `<circle cx="${CX}" cy="${CY}" r="${r}" class="pg-ring${i < INNER ? '' : ' faint'}"/>`).join('');
+  const planets = PLANETS.slice(0, INNER).map((p, i) => {
     const [x, y] = polar(NIGHT_OF_DISCOVERY[i], RINGS[i]);
-    return `<circle cx="${x}" cy="${y}" r="9" fill="${p.color}" stroke="#2b1d0e" stroke-width="1.5"/>
-      <text x="${x + 15}" y="${y - 10}" class="pg-symbol">${p.symbol}</text>`;
+    return `<circle cx="${x}" cy="${y}" r="8" fill="${p.color}" stroke="#2b1d0e" stroke-width="1.5"/>
+      <text x="${x + 13}" y="${y - 8}" class="pg-symbol">${p.symbol}</text>`;
   }).join('');
-  const legend = PLANETS.map((p, i) => `<text x="${40 + i * 88}" y="${H - 34}" class="pg-legend">${p.symbol} ${p.name}</text>`).join('');
+  const legend = PLANETS.slice(0, INNER).map((p, i) => `<text x="${40 + i * 88}" y="${H - 34}" class="pg-legend">${p.symbol} ${p.name}</text>`).join('');
   return `
     <rect width="${W}" height="${H}" fill="url(#paper)"/>
     <text x="${W / 2}" y="48" class="pg-title">The orrery, as the planets stood</text>
     <text x="${W / 2}" y="76" class="pg-sub">on the night of the 9th</text>
-    <line x1="${CX - 150}" y1="${CY}" x2="${CX + 150}" y2="${CY}" class="pg-guide"/>
-    <line x1="${CX}" y1="${CY - 150}" x2="${CX}" y2="${CY + 150}" class="pg-guide"/>
+    <line x1="${CX - 160}" y1="${CY}" x2="${CX + 160}" y2="${CY}" class="pg-guide"/>
+    <line x1="${CX}" y1="${CY - 160}" x2="${CX}" y2="${CY + 160}" class="pg-guide"/>
     ${rings}
     <circle cx="${CX}" cy="${CY}" r="14" fill="#e8b44a" stroke="#8a5a10" stroke-width="2"/>
-    <path d="M${CX - 8} ${CY - 180} L${CX + 8} ${CY - 180} L${CX} ${CY - 166} Z" fill="#2b1d0e"/>
-    <text x="${CX + 14}" y="${CY - 186}" class="pg-note">marker</text>
+    <path d="M${CX - 8} ${CY - 200} L${CX + 8} ${CY - 200} L${CX} ${CY - 188} Z" fill="#2b1d0e"/>
+    <text x="${CX + 40}" y="${CY - 198}" class="pg-note">marker</text>
     ${numerals}${planets}${legend}
-    <text x="${W / 2}" y="${H - 10}" class="pg-note">count each ring from the marker</text>`;
+    <text x="${W / 2}" y="${H - 10}" class="pg-note">Jupiter &amp; Saturn: see the Almanac</text>`;
 }
 
 const DEFS = `

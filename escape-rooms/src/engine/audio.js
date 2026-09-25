@@ -1,10 +1,12 @@
+import { createGramophone } from './music.js';
+
 // Procedural sound: everything is synthesised with WebAudio, so there are no files
-// to load. Ambience (wind, a crackling fire) runs continuously once unlocked by a
-// user gesture; one-shot effects are played by name.
+// to load. Ambience (wind, a crackling fire, the gramophone) runs continuously once
+// unlocked by a user gesture; one-shot effects are played by name.
 
 export function createAudio() {
   const Ctx = window.AudioContext || window.webkitAudioContext;
-  if (!Ctx) return { unlock() {}, setVolume() {}, play() {}, setFireDistance() {} };
+  if (!Ctx) return { unlock() {}, setVolume() {}, play() {}, setFireDistance() {}, setMusic() {}, setMusicDistance() {} };
 
   const ctx = new Ctx();
   const master = ctx.createGain();
@@ -133,6 +135,13 @@ export function createAudio() {
       tone({ at: t + 3.2, freq: 80, glideTo: 45, dur: 0.8, gain: 0.4, send: 0.8 });
       burst({ at: t + 3.2, dur: 0.3, type: 'lowpass', freq: 400, gain: 0.4, send: 0.8 });
     },
+    grind: () => {
+      const t = ctx.currentTime;
+      burst({ at: t, dur: 1.6, type: 'lowpass', freq: 380, sweepTo: 180, q: 0.7, gain: 0.35, attack: 0.2, send: 0.7 });
+      tone({ at: t, freq: 55, glideTo: 42, dur: 1.6, type: 'sawtooth', gain: 0.05, attack: 0.2, send: 0.6 });
+      for (let i = 0; i < 9; i++) burst({ at: t + 0.1 + Math.random() * 1.3, dur: 0.05, type: 'bandpass', freq: 900 + Math.random() * 900, q: 2, gain: 0.08, send: 0.5 });
+      tone({ at: t + 1.6, freq: 70, glideTo: 40, dur: 0.5, gain: 0.3, send: 0.8 });
+    },
     step: () => {
       tone({ freq: 75 + Math.random() * 20, glideTo: 50, dur: 0.09, gain: 0.07 + Math.random() * 0.03, send: 0.25 });
       burst({ dur: 0.07, type: 'lowpass', freq: 500, gain: 0.05, send: 0.2 });
@@ -143,7 +152,8 @@ export function createAudio() {
 
   let fireGain = null;
   function startAmbience() {
-    // Wind across the open slit: band-passed noise with a slowly wandering pitch.
+    // Wind across the open slit: band-passed noise with a slowly wandering pitch, long
+    // calm spells between gusts, and now and then a thin whistle past the shutters.
     const wind = ctx.createBufferSource();
     wind.buffer = noise;
     wind.loop = true;
@@ -152,7 +162,7 @@ export function createAudio() {
     wf.frequency.value = 420;
     wf.Q.value = 0.9;
     const wg = ctx.createGain();
-    wg.gain.value = 0.05;
+    wg.gain.value = 0.02;
     wind.connect(wf).connect(wg);
     out(wg, 0.5);
     wind.start();
@@ -163,17 +173,45 @@ export function createAudio() {
     rf.type = 'lowpass';
     rf.frequency.value = 110;
     const rg = ctx.createGain();
-    rg.gain.value = 0.06;
+    rg.gain.value = 0.04;
     rumble.connect(rf).connect(rg);
     out(rg, 0);
     rumble.start(0, 0.7);
     const gust = () => {
       const t = ctx.currentTime;
-      wf.frequency.setTargetAtTime(280 + Math.random() * 520, t, 1.5);
-      wg.gain.setTargetAtTime(0.025 + Math.random() * 0.07, t, 1.8);
-      setTimeout(gust, 1800 + Math.random() * 2600);
+      const calm = Math.random() < 0.4;
+      wf.frequency.setTargetAtTime(calm ? 260 + Math.random() * 120 : 300 + Math.random() * 600, t, 2.5);
+      wf.Q.setTargetAtTime(0.6 + Math.random() * 1.4, t, 2);
+      wg.gain.setTargetAtTime(calm ? 0.006 + Math.random() * 0.01 : 0.02 + Math.random() * 0.05, t, calm ? 4 : 2.2);
+      setTimeout(gust, (calm ? 6000 : 2500) + Math.random() * 6000);
     };
     gust();
+    const whistle = () => {
+      if (ctx.state === 'running') {
+        const t = ctx.currentTime;
+        const dur = 3 + Math.random() * 4;
+        const src = ctx.createBufferSource();
+        src.buffer = noise;
+        src.loop = true;
+        const f = ctx.createBiquadFilter();
+        f.type = 'bandpass';
+        f.Q.value = 18;
+        const base = 600 + Math.random() * 500;
+        f.frequency.setValueAtTime(base, t);
+        f.frequency.linearRampToValueAtTime(base * (1.15 + Math.random() * 0.3), t + dur * 0.5);
+        f.frequency.linearRampToValueAtTime(base * 0.9, t + dur);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.03 + Math.random() * 0.03, t + dur * 0.4);
+        g.gain.linearRampToValueAtTime(0, t + dur);
+        src.connect(f).connect(g);
+        out(g, 0.8);
+        src.start(t, Math.random());
+        src.stop(t + dur + 0.1);
+      }
+      setTimeout(whistle, 25000 + Math.random() * 40000);
+    };
+    setTimeout(whistle, 15000);
 
     // The stove: irregular pops and a soft hiss, louder the closer you stand.
     fireGain = ctx.createGain();
@@ -212,6 +250,8 @@ export function createAudio() {
   }
 
   let started = false;
+  let gramophone = null;
+  let musicWanted = false;
   return {
     // Must be called from a user gesture (click / key).
     unlock() {
@@ -219,7 +259,16 @@ export function createAudio() {
       if (!started) {
         started = true;
         startAmbience();
+        gramophone = createGramophone(ctx, master, reverb);
+        gramophone.setPlaying(musicWanted);
       }
+    },
+    setMusic(on) {
+      musicWanted = on;
+      gramophone?.setPlaying(on);
+    },
+    setMusicDistance(d) {
+      gramophone?.setDistance(d);
     },
     setVolume(v) {
       master.gain.setTargetAtTime(v, ctx.currentTime, 0.05);

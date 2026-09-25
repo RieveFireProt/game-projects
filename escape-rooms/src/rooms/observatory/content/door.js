@@ -1,5 +1,6 @@
 import { el } from '../../../engine/ui.js';
 import { FINAL_LETTER } from '../story.js';
+import { noteArticle } from './common.js';
 
 // The door: bolted until the telescope finds the new star, then the way out.
 export function openDoor(game) {
@@ -16,12 +17,7 @@ export function openDoor(game) {
       }
       body.append(
         el('p', { class: 'caption' }, 'Cold night air drifts up a stone stairwell, and a lantern burns on the wall. Pinned to the inside of the door is one last letter.'),
-        el('article', { class: 'letter handwritten' },
-          el('p', { class: 'letter-head' }, FINAL_LETTER.heading),
-          el('p', {}, FINAL_LETTER.greeting),
-          FINAL_LETTER.body.map((p) => el('p', {}, p)),
-          el('p', { class: 'signoff' }, FINAL_LETTER.signoff),
-          el('p', { class: 'signature' }, FINAL_LETTER.signature)),
+        noteArticle(game, FINAL_LETTER, 'final-letter'),
         el('div', { class: 'ts-actions' }, el('button', { class: 'btn', onclick: () => game.finish() }, 'Go down the stairs')));
     },
   });

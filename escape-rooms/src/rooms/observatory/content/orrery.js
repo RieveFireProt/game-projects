@@ -1,21 +1,23 @@
 import { el } from '../../../engine/ui.js';
-import { NIGHT_OF_DISCOVERY, NUMERALS, PLANETS, POSITIONS } from './orreryData.js';
+import { NIGHT_OF_DISCOVERY, NUMERALS, PLANETS, POSITIONS, SATURN } from './orreryData.js';
 import { lensSvg } from './lens.js';
 
-const RINGS = [70, 115, 160, 205];
+const RINGS = [58, 86, 114, 144, 176, 208];
 const UNLOCK_DELAY_MS = 900;
 
 export const ringFlag = (i) => `orrery.ring.${i}`;
 export const ringStop = (state, i) => state.get(ringFlag(i), PLANETS[i].start);
 
 // Turn each planet's ring in clicks until they stand as they did on the night of the
-// discovery. The base then opens to reveal the lens.
+// discovery. Saturn has to be found and fitted first. The base then opens to reveal
+// the lens.
 export function openOrrery(game) {
   game.openModal({
     title: 'The orrery',
     theme: 'brass',
     render(body) {
       const { state } = game;
+      state.set('orrery.seen');
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '-280 -280 560 560');
       svg.classList.add('orrery-svg');
@@ -26,8 +28,8 @@ export function openOrrery(game) {
 
       const numerals = NUMERALS.map((n, i) => {
         const a = (i / POSITIONS) * Math.PI * 2;
-        return `<text x="${Math.sin(a) * 245}" y="${-Math.cos(a) * 245}" class="orr-numeral">${n}</text>
-          <line x1="${Math.sin(a) * 222}" y1="${-Math.cos(a) * 222}" x2="${Math.sin(a) * 232}" y2="${-Math.cos(a) * 232}" class="orr-tick"/>`;
+        return `<text x="${Math.sin(a) * 246}" y="${-Math.cos(a) * 246}" class="orr-numeral">${n}</text>
+          <line x1="${Math.sin(a) * 222}" y1="${-Math.cos(a) * 222}" x2="${Math.sin(a) * 230}" y2="${-Math.cos(a) * 230}" class="orr-tick"/>`;
       }).join('');
       svg.innerHTML = `
         <defs>
@@ -42,8 +44,12 @@ export function openOrrery(game) {
         ${PLANETS.map((p, i) => `
           <g class="orr-planet" data-ring="${i}">
             <line x1="0" y1="0" x2="0" y2="${-RINGS[i]}" class="orr-arm"/>
-            <circle cy="${-RINGS[i]}" r="${13 + i * 2}" fill="${p.color}" stroke="#1a1208" stroke-width="2"/>
-            <text y="${-RINGS[i] + 5}" class="orr-sym">${p.symbol}</text>
+            <g class="orr-ball${i === SATURN ? ' saturn' : ''}">
+              ${i === SATURN ? `<ellipse cy="${-RINGS[i]}" rx="24" ry="7" fill="none" stroke="#b8a060" stroke-width="3"/>` : ''}
+              <circle cy="${-RINGS[i]}" r="${11 + i * 1.4}" fill="${p.color}" stroke="#1a1208" stroke-width="2"/>
+              <text y="${-RINGS[i] + 5}" class="orr-sym">${p.symbol}</text>
+            </g>
+            ${i === SATURN ? `<circle cy="${-RINGS[i]}" r="4" class="orr-post"/>` : ''}
           </g>`).join('')}
         <circle r="30" fill="url(#orrSun)" stroke="#8a5a10" stroke-width="3"/>`;
 
@@ -61,6 +67,7 @@ export function openOrrery(game) {
       }
 
       function check() {
+        if (!state.has('orrery.saturn')) return;
         if (!PLANETS.every((_, i) => ringStop(state, i) === NIGHT_OF_DISCOVERY[i])) return;
         state.set('orrery.solved');
         svg.classList.add('solved');
@@ -70,11 +77,27 @@ export function openOrrery(game) {
       function draw() {
         planetEls.forEach((g, i) => (g.style.transform = `rotate(${angles[i]}deg)`));
         const solved = state.has('orrery.solved');
+        const fitted = state.has('orrery.saturn');
+        svg.querySelector('.orr-ball.saturn').style.display = fitted ? '' : 'none';
         controls.inert = solved;
         caption.textContent = solved
           ? 'With a soft click, a shallow drawer slides out of the orrery’s base.'
-          : 'Each ring turns in stiff clicks against the brass marker. Click a ring to turn it, right-click to turn it back.';
+          : fitted
+            ? 'Each ring turns in stiff clicks against the brass marker, thirty degrees at a time. Click a ring to turn it on, right-click to turn it back.'
+            : 'Each ring turns in stiff clicks against the brass marker, thirty degrees at a time. The outermost arm is bare: Saturn is missing from it.';
         reward.replaceChildren();
+        if (!fitted && state.hasItem('saturn')) {
+          reward.append(el('button', {
+            class: 'btn small',
+            onclick: () => {
+              state.removeItem('saturn');
+              state.set('orrery.saturn');
+              game.hud.toast('Saturn clicks back onto its arm');
+              draw();
+              check();
+            },
+          }, 'Fit Saturn to its arm'));
+        }
         if (solved && !state.has('taken.lens')) {
           const card = el('button', {
             class: 'item-card',

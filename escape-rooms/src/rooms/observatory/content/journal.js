@@ -22,7 +22,7 @@ export function renderJournal(body, game) {
       : entry.text;
     pageEl.classList.toggle('torn', Boolean(entry.torn));
     pageEl.replaceChildren(
-      ...(entry.date ? [el('h3', {}, entry.date)] : []),
+      ...(entry.date ? [game?.narrator?.button(`journal-${page}`), el('h3', {}, entry.date)].filter(Boolean) : []),
       ...text.map((t) => el('p', {}, t)));
     counter.textContent = `${page + 1} / ${JOURNAL.length}`;
     prev.disabled = page === 0;
