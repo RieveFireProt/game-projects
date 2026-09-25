@@ -29,6 +29,16 @@ export const sphere = (r, material, x, y, z, segments = 24) =>
 export const lathe = (profile, material, x, y, z, segments = 32) =>
   mesh(new THREE.LatheGeometry(profile.map(([r, h]) => new THREE.Vector2(r, h)), segments), material, x, y, z);
 
+// A round rod from point a to point b ([x, y, z] each): splayed legs, braces, spindles.
+export function strut(a, b, r, material, segments = 8) {
+  const [from, to] = [new THREE.Vector3(...a), new THREE.Vector3(...b)];
+  const along = to.clone().sub(from);
+  const rod = mesh(new THREE.CylinderGeometry(r, r, along.length(), segments), material);
+  rod.position.copy(from).add(to).multiplyScalar(0.5);
+  rod.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), along.normalize());
+  return rod;
+}
+
 export function group(...children) {
   const g = new THREE.Group();
   if (children.length) g.add(...children);

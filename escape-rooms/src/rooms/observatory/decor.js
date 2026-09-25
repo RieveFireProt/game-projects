@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { box, cylinder, group, lathe, legs, mat, mesh, place, seededRandom, sphere } from '../../engine/build.js';
+import { box, cylinder, group, lathe, legs, mat, mesh, place, seededRandom, sphere, strut } from '../../engine/build.js';
 import { M } from './materials.js';
 import { emberMaterial, flameMesh } from './lighting.js';
 import { label, paint } from './textures.js';
@@ -539,24 +539,29 @@ export function instrumentCabinet() {
 
 // Tall observing stool, seat wound up to the height of the eyepiece.
 export function observingChair() {
+  const SEAT = 0.62;
+  const RING_Y = 0.24;
+  const [topR, footR] = [0.12, 0.24];
+  const legRadiusAt = (y) => footR + ((topR - footR) * y) / SEAT;
   const c = group(
-    cylinder(0.2, 0.2, 0.05, M.leather, 0, 0.66, 0, 24),
-    cylinder(0.18, 0.18, 0.04, M.darkWood, 0, 0.62, 0, 24),
-    cylinder(0.035, 0.035, 0.3, M.brass, 0, 0.5, 0, 12),
-    mesh(new THREE.TorusGeometry(0.2, 0.012, 6, 28), M.darkBrass, 0, 0.26, 0),
+    cylinder(0.2, 0.2, 0.05, M.leather, 0, SEAT + 0.04, 0, 24),
+    cylinder(0.18, 0.18, 0.04, M.darkWood, 0, SEAT, 0, 24),
+    mesh(new THREE.TorusGeometry(legRadiusAt(RING_Y), 0.012, 6, 28), M.darkBrass, 0, RING_Y, 0),
   );
-  c.children[3].rotation.x = Math.PI / 2;
+  c.children[2].rotation.x = Math.PI / 2;
   for (let i = 0; i < 4; i++) {
     const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    const leg = cylinder(0.018, 0.022, 0.64, M.darkWood, Math.cos(a) * 0.19, 0.31, Math.sin(a) * 0.19, 8);
-    leg.rotation.set(Math.sin(a) * 0.14, 0, -Math.cos(a) * 0.14);
-    c.add(leg);
+    const [x, z] = [Math.cos(a), Math.sin(a)];
+    c.add(strut([x * topR, SEAT, z * topR], [x * footR, 0, z * footR], 0.02, M.darkWood));
   }
-  // Low curved back rest.
-  const back = mesh(new THREE.TorusGeometry(0.19, 0.02, 8, 20, Math.PI * 0.8), M.darkWood, 0, 0.86, 0);
+  // Low curved back rest on three spindles rising from the seat.
+  const back = mesh(new THREE.TorusGeometry(0.17, 0.02, 8, 20, Math.PI * 0.8), M.darkWood, 0, 0.86, 0);
   back.rotation.set(Math.PI / 2, 0, Math.PI * 1.1);
   c.add(back);
-  for (const a of [-0.9, 0, 0.9]) c.add(cylinder(0.01, 0.01, 0.2, M.darkWood, Math.sin(a) * 0.19, 0.77, -Math.cos(a) * 0.19, 6));
+  for (const a of [-0.9, 0, 0.9]) {
+    const [x, z] = [Math.sin(a) * 0.17, -Math.cos(a) * 0.17];
+    c.add(strut([x, SEAT + 0.06, z], [x, 0.86, z], 0.01, M.darkWood, 6));
+  }
   return c;
 }
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { box, cylinder, group, lathe, legs, mat, mesh, place, seededRandom, shadowed, sphere } from '../../engine/build.js';
+import { box, cylinder, group, lathe, legs, mat, mesh, place, seededRandom, shadowed, sphere, strut } from '../../engine/build.js';
 import { M } from './materials.js';
 import { ROOM_RADIUS } from './layout.js';
 import { flameMesh } from './lighting.js';
@@ -103,18 +103,19 @@ export function buildDesk() {
   spectacles.rotation.y = 0.5;
 
   // Bentwood chair, pushed back as if someone left in a hurry.
+  // Legs splay out from under the seat; the back's uprights and spindles run up
+  // into the bent hoop (radius 0.14, springing from y 0.9).
+  const SEAT = 0.44;
+  const HOOP_Y = 0.9;
+  const hoopHeight = (x) => HOOP_Y + Math.sqrt(0.14 ** 2 - x ** 2);
   const chair = group(
-    cylinder(0.21, 0.21, 0.04, M.darkWood, 0, 0.46, 0),
-    ...[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) => {
-      const leg = cylinder(0.014, 0.018, 0.46, M.darkWood, sx * 0.15, 0.23, sz * 0.15, 8);
-      leg.rotation.set(sz * 0.08, 0, -sx * 0.08);
-      return leg;
-    }),
-    ...[-0.13, 0.13].map((x) => cylinder(0.014, 0.014, 0.5, M.darkWood, x, 0.72, 0.17, 8)),
-    ...[-0.05, 0.05].map((x) => cylinder(0.008, 0.008, 0.4, M.darkWood, x, 0.68, 0.18, 6)),
+    cylinder(0.21, 0.21, 0.04, M.darkWood, 0, SEAT + 0.02, 0),
+    ...[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) =>
+      strut([sx * 0.11, SEAT, sz * 0.11], [sx * 0.16, 0, sz * 0.16], 0.015, M.darkWood)),
+    ...[-0.14, 0.14].map((x) => strut([x, SEAT + 0.03, 0.14], [x, HOOP_Y, 0.14], 0.014, M.darkWood)),
+    ...[-0.05, 0.05].map((x) => strut([x, SEAT + 0.03, 0.15], [x, hoopHeight(x), 0.14], 0.008, M.darkWood, 6)),
+    mesh(new THREE.TorusGeometry(0.14, 0.016, 8, 24, Math.PI), M.darkWood, 0, HOOP_Y, 0.14),
   );
-  const backrest = mesh(new THREE.TorusGeometry(0.14, 0.016, 8, 24, Math.PI), M.darkWood, 0, 0.9, 0.17);
-  chair.add(backrest);
   place(chair, -0.62, 0, 0.8, 0.6 + Math.PI);
 
   desk.add(drawer, letter, lamp, inkwell, quill, books, ...notes, spectacles, chair);
