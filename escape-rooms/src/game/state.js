@@ -28,6 +28,7 @@ export function createState(saveKey) {
   }
 
   const has = (flag) => Boolean(data.flags[flag]);
+  const get = (flag, fallback) => data.flags[flag] ?? fallback;
   const hasItem = (id) => data.inventory.includes(id);
   const hintLevel = (puzzleId) => data.hints[puzzleId] ?? 0;
 
@@ -74,6 +75,7 @@ export function createState(saveKey) {
 
   return {
     has,
+    get,
     set,
     hasItem,
     addItem,
@@ -82,6 +84,7 @@ export function createState(saveKey) {
     revealHint,
     tick,
     reset,
+    get hintsUsed() { return Object.values(data.hints).reduce((a, b) => a + b, 0); },
     get inventory() { return [...data.inventory]; },
     get elapsedMs() { return data.elapsedMs; },
     on(fn) {

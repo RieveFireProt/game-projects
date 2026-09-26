@@ -1,6 +1,6 @@
 import { el } from './ui.js';
 
-// On-screen chrome: crosshair, hover label, timer, satchel bar, toasts, pause screen.
+// On-screen chrome: crosshair, hover label, timer, satchel bar, toasts, musings, pause screen.
 export function createHud() {
   const $ = (id) => document.getElementById(id);
   const crosshair = $('crosshair');
@@ -9,8 +9,10 @@ export function createHud() {
   const timer = $('timer');
   const bar = $('inventory-bar');
   const toastEl = $('toast');
+  const musing = $('musing');
   let currentPrompt = null;
   let toastTimeout = null;
+  let musingTimeout = null;
 
   return {
     setPrompt(label) {
@@ -44,6 +46,15 @@ export function createHud() {
       toastEl.hidden = false;
       clearTimeout(toastTimeout);
       toastTimeout = setTimeout(() => (toastEl.hidden = true), 3500);
+    },
+    // A passing thought about something that's only atmosphere.
+    say(line) {
+      musing.textContent = line;
+      musing.hidden = false;
+      musing.classList.remove('fading');
+      void musing.offsetWidth; // restart the fade-in animation
+      clearTimeout(musingTimeout);
+      musingTimeout = setTimeout(() => (musing.hidden = true), 3000 + line.length * 45);
     },
     onClick(id, fn) {
       $(id).addEventListener('click', fn);

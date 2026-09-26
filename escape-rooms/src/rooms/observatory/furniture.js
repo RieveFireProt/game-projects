@@ -1,0 +1,571 @@
+import * as THREE from 'three';
+import { box, cylinder, group, lathe, legs, mat, mesh, place, seededRandom, shadowed, sphere, strut } from '../../engine/build.js';
+import { M } from './materials.js';
+import { ROOM_RADIUS } from './layout.js';
+import { flameMesh } from './lighting.js';
+import { bookSpine, label, scribbles } from './textures.js';
+
+// The furniture the puzzles hang off. Each builder faces local +Z (towards the
+// room centre once placed with atWall) and returns the pieces hotspots need.
+
+export const DRAWER_TRAVEL = 0.32;
+const DESK_TOP = 0.79;
+
+// A flat sheet of paper lying on a surface.
+function sheet(w, h, map, x, y, z, rz = 0) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map, roughness: 1 }));
+  m.rotation.set(-Math.PI / 2, 0, rz);
+  m.position.set(x, y, z);
+  m.receiveShadow = true;
+  return m;
+}
+
+// Brass knob / drawer pull.
+const knob = (x, y, z) => sphere(0.014, M.brass, x, y, z, 10);
+
+export function buildDesk() {
+  const desk = group(
+    box(1.64, 0.05, 0.82, M.mahogany, 0, DESK_TOP - 0.025, 0),
+    box(1.42, 0.004, 0.6, M.greenLeather, 0, DESK_TOP + 0.001, 0.02),
+    box(0.66, 0.5, 0.03, M.mahogany, 0, 0.47, -0.36), // modesty panel
+  );
+  // Two pedestals of drawers either side of the kneehole.
+  for (const sx of [-1, 1]) {
+    const x = sx * 0.555;
+    desk.add(box(0.46, 0.7, 0.74, M.mahogany, x, 0.39, 0), box(0.5, 0.05, 0.78, M.darkWood, x, 0.025, 0));
+    for (let i = 0; i < 3; i++) {
+      const y = 0.17 + i * 0.205;
+      desk.add(box(0.4, 0.17, 0.02, M.darkWood, x, y, 0.375), knob(x, y, 0.395));
+    }
+  }
+
+  // The locked centre drawer with its four-wheel combination plate.
+  const drawer = group(
+    box(0.58, 0.12, 0.7, M.mahogany, 0, 0.66, 0),
+    box(0.62, 0.14, 0.025, M.darkWood, 0, 0.66, 0.36),
+    box(0.16, 0.07, 0.01, M.brass, 0, 0.66, 0.378),
+  );
+  for (let i = 0; i < 4; i++) {
+    const wheel = cylinder(0.011, 0.011, 0.012, M.darkBrass, -0.045 + i * 0.03, 0.66, 0.385, 12);
+    drawer.add(wheel);
+  }
+  drawer.userData.closedZ = 0;
+  drawer.userData.openZ = DRAWER_TRAVEL;
+
+  const letter = sheet(0.21, 0.29, scribbles(3), -0.36, DESK_TOP + 0.006, 0.14, 0.2);
+
+  // Student lamp: brass font, stem and a green glass shade that glows.
+  const shadeMat = mat(0x2f6a3a, { emissive: 0x3a5a18, emissiveIntensity: 0.6, roughness: 0.3, side: THREE.DoubleSide });
+  const lamp = group(
+    lathe([[0, 0], [0.1, 0], [0.1, 0.02], [0.06, 0.04], [0.02, 0.05]], M.brass, 0, DESK_TOP, 0),
+    cylinder(0.01, 0.01, 0.36, M.brass, 0, DESK_TOP + 0.2, 0),
+    lathe([[0.03, 0], [0.16, -0.12], [0.165, -0.13], [0.07, 0.01]], shadeMat, 0, DESK_TOP + 0.43, 0, 28),
+    sphere(0.045, M.brass, 0, DESK_TOP + 0.08, 0, 16),
+  );
+  lamp.position.set(0.56, 0, -0.2);
+  lamp.traverse((o) => (o.castShadow = false));
+  const lampFlame = flameMesh(1.4, 0xffd08a);
+  lampFlame.position.set(0, DESK_TOP + 0.37, 0);
+  lamp.add(lampFlame);
+
+  // Desk clutter.
+  const inkwell = group(
+    box(0.07, 0.045, 0.07, M.glass, 0, DESK_TOP + 0.023, 0),
+    box(0.055, 0.03, 0.055, mat(0x0a0a18, { roughness: 0.2 }), 0, DESK_TOP + 0.017, 0),
+    cylinder(0.02, 0.022, 0.015, M.brass, 0, DESK_TOP + 0.052, 0, 12),
+  );
+  inkwell.position.set(0.12, 0, -0.26);
+  const quill = mesh(new THREE.ConeGeometry(0.012, 0.28, 6), mat(0xf2ede0, { roughness: 1 }), 0.19, DESK_TOP + 0.1, -0.27);
+  quill.rotation.set(0.2, 0, -0.6);
+
+  const books = group();
+  const bookColors = [0x5b2320, 0x23395b, 0x2f4a2a];
+  [0.05, 0.045, 0.06].reduce((y, h, i) => {
+    const b = box(0.26 - i * 0.02, h, 0.19 - i * 0.01, mat(bookColors[i], { roughness: 0.7 }), 0, y + h / 2, 0);
+    b.rotation.y = (i - 1) * 0.18;
+    books.add(b);
+    return y + h;
+  }, DESK_TOP);
+  books.position.set(-0.6, 0, -0.2);
+
+  const notes = [sheet(0.2, 0.26, scribbles(21), 0.2, DESK_TOP + 0.004, 0.1, -0.35)];
+  // The sheet Voss scrawled over in red ink (a clue, so it's its own hotspot).
+  const redSheet = sheet(0.2, 0.26, scribbles(22, { ink: 'rgba(200,40,40,0.85)' }), 0.3, DESK_TOP + 0.005, 0.2, -0.1);
+  const spectacles = group(
+    ...[-0.022, 0.022].map((x) => {
+      const rim = mesh(new THREE.TorusGeometry(0.017, 0.0025, 6, 20), M.brass, x, 0, 0);
+      rim.rotation.x = Math.PI / 2;
+      return rim;
+    }),
+  );
+  spectacles.position.set(-0.06, DESK_TOP + 0.004, 0.2);
+  spectacles.rotation.y = 0.5;
+
+  // Bentwood chair, pushed back as if someone left in a hurry.
+  // Legs splay out from under the seat; the back's uprights and spindles run up
+  // into the bent hoop (radius 0.14, springing from y 0.9).
+  const SEAT = 0.44;
+  const HOOP_Y = 0.9;
+  const hoopHeight = (x) => HOOP_Y + Math.sqrt(0.14 ** 2 - x ** 2);
+  const chair = group(
+    cylinder(0.21, 0.21, 0.04, M.darkWood, 0, SEAT + 0.02, 0),
+    ...[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) =>
+      strut([sx * 0.11, SEAT, sz * 0.11], [sx * 0.16, 0, sz * 0.16], 0.015, M.darkWood)),
+    ...[-0.14, 0.14].map((x) => strut([x, SEAT + 0.03, 0.14], [x, HOOP_Y, 0.14], 0.014, M.darkWood)),
+    ...[-0.05, 0.05].map((x) => strut([x, SEAT + 0.03, 0.15], [x, hoopHeight(x), 0.14], 0.008, M.darkWood, 6)),
+    mesh(new THREE.TorusGeometry(0.14, 0.016, 8, 24, Math.PI), M.darkWood, 0, HOOP_Y, 0.14),
+  );
+  place(chair, -0.62, 0, 0.8, 0.6 + Math.PI);
+
+  desk.add(drawer, letter, redSheet, lamp, inkwell, quill, books, ...notes, spectacles, chair);
+  return { desk, drawer, letter, redSheet, lamp, lampFlame, chair };
+}
+
+// Vienna regulator style wall clock. Face and hands must keep showing the frozen time.
+export function buildClock({ hours, minutes }) {
+  const case_ = group(
+    box(0.5, 1.1, 0.14, M.mahogany, 0, 0, 0),
+    box(0.58, 0.06, 0.18, M.darkWood, 0, 0.58, 0),
+    box(0.58, 0.06, 0.18, M.darkWood, 0, -0.58, 0),
+    mesh(new THREE.ConeGeometry(0.3, 0.14, 4, 1), M.darkWood, 0, 0.68, 0),
+    lathe([[0, 0], [0.025, 0.02], [0.012, 0.06], [0, 0.08]], M.brass, 0, 0.74, 0, 12),
+    lathe([[0, 0], [0.03, -0.03], [0.012, -0.08], [0, -0.1]], M.brass, 0, -0.61, 0, 12),
+  );
+  case_.children[3].rotation.y = Math.PI / 4;
+  case_.children[3].scale.z = 0.3;
+
+  const face = cylinder(0.2, 0.2, 0.02, M.cream, 0, 0.22, 0.075, 48);
+  face.rotation.x = Math.PI / 2;
+  const bezel = mesh(new THREE.TorusGeometry(0.205, 0.018, 8, 48), M.brass, 0, 0.22, 0.088);
+
+  // Numeral ticks as small bars around the face.
+  const ticks = group();
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const t = box(0.008, 0.03, 0.004, M.iron, Math.sin(a) * 0.165, 0.22 + Math.cos(a) * 0.165, 0.087);
+    t.rotation.z = -a;
+    ticks.add(t);
+  }
+
+  // Clockwise as seen from the front = negative Z rotation.
+  const hand = (length, width, degrees) => {
+    const geometry = new THREE.BoxGeometry(width, length, 0.006);
+    geometry.translate(0, length / 2 - 0.02, 0);
+    const m = new THREE.Mesh(geometry, M.blackIron);
+    m.position.set(0, 0.22, 0.092);
+    m.rotation.z = -THREE.MathUtils.degToRad(degrees);
+    return m;
+  };
+
+  // Glass door over the pendulum, and the pendulum hanging dead still.
+  const glassDoor = box(0.4, 0.62, 0.005, M.glass, 0, -0.2, 0.073);
+  glassDoor.castShadow = false;
+  const pendulum = group(
+    box(0.012, 0.42, 0.006, M.darkBrass, 0, -0.18, 0.05),
+    cylinder(0.06, 0.06, 0.012, M.brass, 0, -0.4, 0.05, 28),
+  );
+  pendulum.children[1].rotation.x = Math.PI / 2;
+  const back = box(0.42, 0.64, 0.005, mat(0x2a1a10), 0, -0.2, 0.04);
+
+  return group(case_, back, pendulum, glassDoor, face, bezel, ticks,
+    hand(0.11, 0.016, (hours + minutes / 60) * 30), hand(0.17, 0.01, minutes * 6),
+    sphere(0.012, M.brass, 0, 0.22, 0.095, 10));
+}
+
+// Tall bookcase with four shelves. The nine books the bookshelf puzzle shows for each
+// shelf are spread along it on pivots at their bottom front edge, so they can tip
+// forward; leverBooks[shelf][slot] (shelf 0 is the top one, as in the puzzle).
+export function buildBookshelf({ shelves = 4, perShelf = 9, vossAt = [2, 3] } = {}) {
+  const rand = seededRandom(42);
+  const spine = bookSpine();
+  const colors = [0x6b2420, 0x23395b, 0x2f4a2a, 0x6b5a2a, 0x3b2a4a, 0x7a4a22, 0x1e1e24];
+  const bookMats = colors.map((c) => mat(c, { map: spine, roughness: 0.75 }));
+  const shelf = group(
+    box(1.4, 2.2, 0.03, M.darkWood, 0, 1.1, -0.185),
+    box(0.05, 2.3, 0.42, M.mahogany, -0.7, 1.15, 0),
+    box(0.05, 2.3, 0.42, M.mahogany, 0.7, 1.15, 0),
+    box(1.56, 0.08, 0.48, M.mahogany, 0, 2.32, 0.01),
+    box(1.5, 0.04, 0.46, M.darkWood, 0, 2.26, 0.01),
+    box(1.45, 0.1, 0.42, M.darkWood, 0, 0.05, 0),
+  );
+  const leverBooks = [];
+  const DEPTH = 0.25;
+  for (let row = 0; row < shelves; row++) {
+    const y = 0.1 + row * 0.53;
+    const index = shelves - 1 - row; // the puzzle counts shelves from the top
+    shelf.add(box(1.36, 0.03, 0.38, M.mahogany, 0, y, 0));
+    const books = [];
+    let x = -0.66;
+    while (x < 0.6) {
+      // Leave the odd gap with a leaning book, like a real shelf.
+      if (rand() < 0.05 && x < 0.4) {
+        const lean = box(0.04, 0.3, 0.24, bookMats[Math.floor(rand() * bookMats.length)], x + 0.1, y + 0.16, 0.02);
+        lean.rotation.z = -0.35;
+        shelf.add(lean);
+        x += 0.16;
+        continue;
+      }
+      const w = 0.03 + rand() * 0.035;
+      const h = 0.25 + rand() * 0.11;
+      books.push({ x: x + w / 2, w, h, material: bookMats[Math.floor(rand() * bookMats.length)] });
+      x += w + 0.003;
+    }
+    const levers = [];
+    const picked = new Set(Array.from({ length: perShelf }, (_, slot) => Math.round((slot * (books.length - 1)) / (perShelf - 1))));
+    books.forEach((b, i) => {
+      const slot = [...picked].indexOf(i);
+      const isVoss = index === vossAt[0] && slot === vossAt[1];
+      const material = isVoss ? mat(0x234030, { map: spine, roughness: 0.6 }) : b.material;
+      if (slot < 0) {
+        shelf.add(box(b.w, b.h, DEPTH, material, b.x, y + 0.015 + b.h / 2, 0.02));
+        return;
+      }
+      const pivot = group(box(b.w, b.h, DEPTH, material, 0, b.h / 2, -DEPTH / 2));
+      pivot.position.set(b.x, y + 0.015, 0.02 + DEPTH / 2);
+      shelf.add(pivot);
+      levers.push(pivot);
+    });
+    leverBooks[index] = levers;
+  }
+  return { shelf, leverBooks };
+}
+
+// The priest-hole: a stone-lined cavity behind the wall, closed by a block of stone
+// that swings open on a hinge at its left edge. Placed with atWall at the sill height.
+export function buildNiche({ width, depth, y0, y1 }) {
+  const height = y1 - y0;
+  const inside = mat(0x6a5a50, { roughness: 1, side: THREE.BackSide });
+  const cavity = box(width + 0.02, height + 0.02, depth, inside, 0, height / 2, -depth / 2);
+  cavity.castShadow = false;
+  const card = new THREE.Mesh(new THREE.PlaneGeometry(0.13, 0.18), new THREE.MeshStandardMaterial({
+    map: scribbles(31, { w: 128, h: 180, top: 24 }), roughness: 1, emissive: 0x2a2418,
+  }));
+  place(card, 0.04, 0.1, -depth + 0.06, -0.15, -0.25);
+  const block = box(width, height, 0.06, M.stoneFront, width / 2, height / 2, -0.03);
+  const nicheDoor = group(block);
+  nicheDoor.position.x = -width / 2;
+  const niche = group(cavity, card, nicheDoor);
+  return { niche, nicheDoor };
+}
+
+export function buildStarChart(texture) {
+  const chart = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.98), new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9 }));
+  chart.position.z = 0.03;
+  chart.receiveShadow = true;
+  const frame = group(
+    box(1.52, 0.06, 0.05, M.darkBrass, 0, 0.52, 0.02),
+    box(1.52, 0.06, 0.05, M.darkBrass, 0, -0.52, 0.02),
+    box(0.06, 1.1, 0.05, M.darkBrass, -0.74, 0, 0.02),
+    box(0.06, 1.1, 0.05, M.darkBrass, 0.74, 0, 0.02),
+  );
+  return { starChart: group(box(1.5, 1.08, 0.02, M.darkWood), chart, frame), chartMesh: chart };
+}
+
+// Tripod table with the orrery and a candle. Planet pivots turn with the puzzle.
+export function buildOrrery() {
+  const table = group(
+    cylinder(0.5, 0.5, 0.04, M.mahogany, 0, 0.75, 0, 48),
+    mesh(new THREE.TorusGeometry(0.5, 0.012, 6, 64), M.darkWood, 0, 0.75, 0),
+    lathe([[0.03, 0], [0.06, 0.05], [0.045, 0.2], [0.07, 0.3], [0.05, 0.45], [0.035, 0.6], [0.06, 0.63], [0, 0.63]], M.darkWood, 0, 0.1, 0),
+  );
+  table.children[1].rotation.x = Math.PI / 2;
+  for (let i = 0; i < 3; i++) {
+    const foot = box(0.04, 0.05, 0.36, M.darkWood, 0, 0, 0);
+    foot.geometry.translate(0, 0, 0.18);
+    const pivot = group(foot);
+    pivot.position.y = 0.14;
+    pivot.rotation.set(0.35, (i / 3) * Math.PI * 2, 0);
+    table.add(pivot);
+  }
+
+  // Base drum with a hidden drawer that slides out when the puzzle is solved.
+  const orrery = group(
+    cylinder(0.17, 0.19, 0.08, M.darkWood, 0, 0.81, 0, 40),
+    mesh(new THREE.TorusGeometry(0.175, 0.006, 6, 48), M.brass, 0, 0.85, 0),
+    cylinder(0.12, 0.14, 0.03, M.brass, 0, 0.865, 0, 40),
+    cylinder(0.012, 0.012, 0.26, M.brass, 0, 1.0, 0, 10),
+    box(0.012, 0.02, 0.02, M.brass, 0, 0.9, 0.12), // the marker
+  );
+  orrery.children[1].rotation.x = Math.PI / 2;
+  const baseDrawer = group(
+    box(0.12, 0.05, 0.14, M.darkWood, 0, 0.81, 0.08),
+    box(0.1, 0.004, 0.1, M.velvet, 0, 0.837, 0.08),
+  );
+  baseDrawer.userData.closedZ = 0;
+  baseDrawer.userData.openZ = 0.13;
+  const baseLens = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.008, 24), mat(0xcfe0ff, { metalness: 0.2, roughness: 0.05, transparent: true, opacity: 0.8 }), 0, 0.845, 0.08);
+  baseLens.userData.keep = true;
+  baseDrawer.userData.lens = baseLens;
+  baseDrawer.add(baseLens);
+  orrery.add(baseDrawer);
+
+  const sun = sphere(0.05, mat(0xe8b44a, { emissive: 0x9a5a0a, emissiveIntensity: 0.8, metalness: 0.4, roughness: 0.3 }), 0, 1.15, 0);
+  orrery.add(sun);
+
+  const planetColors = [0x9a9a9a, 0xd8c08a, 0x3f78b8, 0xb0502a, 0xc89a68, 0xd8c890];
+  const planets = [];
+  let saturnBall = null;
+  [0.07, 0.11, 0.15, 0.19, 0.245, 0.3].forEach((radius, i) => {
+    const y = 1.1 - i * 0.025;
+    const ring = mesh(new THREE.TorusGeometry(radius, 0.003, 6, 64), M.brass, 0, y, 0);
+    ring.rotation.x = Math.PI / 2;
+    const arm = box(radius, 0.004, 0.006, M.brass, radius / 2, 0, 0);
+    const post = cylinder(0.003, 0.003, 0.03, M.brass, radius, 0.015, 0, 6);
+    const size = [0.014, 0.018, 0.019, 0.016, 0.03, 0.025][i];
+    const ball = group(sphere(size, mat(planetColors[i], { roughness: 0.5 }), 0, 0, 0, 16));
+    ball.position.set(radius, 0.03 + size, 0);
+    if (i === 5) {
+      const rings = mesh(new THREE.TorusGeometry(size * 1.7, size * 0.18, 4, 32), mat(0xb8a060, { roughness: 0.4 }));
+      rings.rotation.x = Math.PI / 2 - 0.35;
+      rings.scale.z = 0.25;
+      ball.add(rings);
+      saturnBall = ball;
+    }
+    const pivot = group(arm, post, ball);
+    pivot.position.y = y;
+    orrery.add(ring, pivot);
+    planets.push(pivot);
+  });
+
+  const candle = group(
+    lathe([[0, 0], [0.05, 0], [0.05, 0.01], [0.015, 0.02], [0.012, 0.08], [0.03, 0.09], [0.03, 0.1], [0.012, 0.1]], M.brass, 0, 0.77, 0, 16),
+    cylinder(0.012, 0.012, 0.1, M.wax, 0, 0.92, 0, 10),
+  );
+  const candleFlame = flameMesh(0.9);
+  candleFlame.position.set(0, 0.99, 0);
+  candle.add(candleFlame);
+  candle.position.set(0.3, 0, -0.18);
+
+  table.add(candle, orrery);
+  return { table, orrery, planets, saturnBall, baseDrawer, candleFlame };
+}
+
+export function buildTelegramTable() {
+  const table = group(
+    box(0.62, 0.035, 0.62, M.mahogany, 0, 0.74, 0),
+    box(0.54, 0.08, 0.54, M.darkWood, 0, 0.68, 0),
+    ...legs(0.56, 0.56, 0.66, 0.04, M.darkWood, 0.02),
+  );
+  // Telegraph key, sounder and the register that prints what is sent onto paper tape.
+  const key = group(
+    box(0.2, 0.02, 0.1, M.darkWood, 0, 0.768, 0),
+    box(0.14, 0.008, 0.012, M.brass, 0, 0.788, 0),
+    cylinder(0.014, 0.014, 0.012, mat(0x111111), 0.07, 0.798, 0, 12),
+    cylinder(0.008, 0.008, 0.03, M.brass, -0.06, 0.79, 0, 8),
+  );
+  const sounder = group(
+    box(0.12, 0.015, 0.08, M.darkWood, 0, 0.765, 0),
+    cylinder(0.016, 0.016, 0.05, M.brass, -0.03, 0.795, 0, 10),
+    cylinder(0.016, 0.016, 0.05, M.brass, 0.03, 0.795, 0, 10),
+    box(0.1, 0.008, 0.02, M.brass, 0, 0.825, 0),
+  );
+  const reel = cylinder(0.05, 0.05, 0.025, M.paper, -0.07, 0.86, 0, 20);
+  reel.rotation.x = Math.PI / 2;
+  const register = group(
+    box(0.2, 0.08, 0.1, M.darkWood, 0, 0.8, 0),
+    box(0.16, 0.01, 0.08, M.brass, 0, 0.845, 0),
+    reel,
+    box(0.022, 0.002, 0.3, M.paper, 0.08, 0.758, 0.14),
+  );
+  register.children[3].rotation.x = 0.05;
+  place(key, 0.15, 0, -0.16, 0.2);
+  place(sounder, -0.16, 0, -0.2, -0.1);
+  place(register, -0.12, 0, 0.02, 0.3);
+  const telegram = sheet(0.2, 0.15, scribbles(9, { w: 320, h: 230, paper: '#e6d6a8', header: 'POST OFFICE TELEGRAPHS', top: 26 }), 0.12, 0.762, 0.16, -0.15);
+  const telegraph = group(key, sounder, register, telegram);
+  table.add(telegraph);
+  return { table, telegraph };
+}
+
+// The great telescope: cast-iron pier, fork mount, brass tube aimed at the slit.
+// Dials face +X, towards the door side where players arrive.
+export function buildTelescope() {
+  const pier = group(
+    lathe([[0.55, 0], [0.55, 0.06], [0.42, 0.1], [0.3, 0.2], [0.24, 0.32], [0.2, 1.1], [0.26, 1.2], [0.3, 1.26], [0.3, 1.3], [0, 1.3]], M.paintedIron, 0, 0, 0, 40),
+  );
+  for (const y of [0.34, 1.16]) {
+    const band = mesh(new THREE.TorusGeometry(y > 1 ? 0.235 : 0.235, 0.015, 8, 40), M.brass, 0, y, 0);
+    band.rotation.x = Math.PI / 2;
+    pier.add(band);
+  }
+  // Bolts around the foot.
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    pier.add(cylinder(0.022, 0.022, 0.03, M.brass, Math.cos(a) * 0.48, 0.07, Math.sin(a) * 0.48, 8));
+  }
+
+  const head = group(
+    cylinder(0.3, 0.32, 0.05, M.brass, 0, 1.325, 0, 40),
+    box(0.42, 0.28, 0.42, M.paintedIron, 0, 1.49, 0),
+    box(0.44, 0.03, 0.44, M.brass, 0, 1.64, 0),
+    cylinder(0.05, 0.05, 0.72, M.brass, 0, 2.0, 0, 16),
+  );
+  head.children[3].rotation.x = Math.PI / 2;
+  // Fork arms: tapered iron posts rising to brass trunnion bosses.
+  for (const z of [-0.3, 0.3]) {
+    const arm = cylinder(0.035, 0.06, 0.38, M.paintedIron, 0, 1.83, z, 16);
+    const boss = cylinder(0.075, 0.075, 0.07, M.brass, 0, 2.0, z, 24);
+    boss.rotation.x = Math.PI / 2;
+    const cap = sphere(0.045, M.brass, 0, 1.66, z, 12);
+    head.add(arm, boss, cap);
+  }
+
+  // Setting dials with pointers that turn with the puzzle.
+  const dialFace = (text) => {
+    const t = label(text, { w: 128, h: 128, bg: '#caa35a', color: '#2b1d0e', size: 0.16, weight: 'bold' });
+    return new THREE.MeshStandardMaterial({ map: t, metalness: 0.6, roughness: 0.35 });
+  };
+  const dial = (z, text) => {
+    const d = cylinder(0.1, 0.1, 0.025, [M.brass, dialFace(text), M.brass], 0.23, 1.5, z, 32);
+    d.rotation.z = -Math.PI / 2;
+    d.rotation.y = 0;
+    const pointer = box(0.004, 0.08, 0.012, M.blackIron, 0, 0.04, 0);
+    const pointerPivot = group(pointer);
+    pointerPivot.position.set(0.245, 1.5, z);
+    pointerPivot.rotation.x = 0;
+    return { d, pointerPivot };
+  };
+  const hourDial = dial(-0.11, 'HOUR');
+  const heightDial = dial(0.11, 'HEIGHT');
+  head.add(hourDial.d, hourDial.pointerPivot, heightDial.d, heightDial.pointerPivot);
+
+  // Tube, tilted 40° off vertical towards the slit (-X); eyepiece end low on the +X side.
+  const tube = group(
+    cylinder(0.14, 0.12, 3.2, M.brass, 0, 0.4, 0, 40),
+    cylinder(0.165, 0.165, 0.45, M.darkBrass, 0, 1.95, 0, 40),
+    cylinder(0.04, 0.05, 0.2, M.blackIron, 0, -1.28, 0, 16),
+    cylinder(0.025, 0.03, 0.1, M.brass, 0, -1.42, 0, 16),
+    cylinder(0.035, 0.035, 0.6, M.brass, 0.2, 0.4, 0, 16), // finder
+  );
+  for (const y of [-1.0, -0.2, 0.9, 1.72]) {
+    const band = mesh(new THREE.TorusGeometry(0.145 - (y + 1) * 0.006, 0.014, 8, 40), M.darkBrass, 0, y, 0);
+    band.rotation.x = Math.PI / 2;
+    tube.add(band);
+  }
+  for (const y of [0.2, 0.6]) tube.add(box(0.07, 0.03, 0.03, M.darkBrass, 0.16, y, 0));
+  // Focusing knobs.
+  tube.add(cylinder(0.02, 0.02, 0.14, M.brass, 0, -1.22, 0, 12));
+  tube.children.at(-1).rotation.x = Math.PI / 2;
+
+  // Lens socket beside the eyepiece, empty until the lens is seated.
+  const socket = group(
+    box(0.04, 0.12, 0.12, M.darkBrass, 0.15, -0.95, 0),
+    mesh(new THREE.TorusGeometry(0.045, 0.01, 8, 24), M.brass, 0.175, -0.95, 0),
+  );
+  socket.children[1].rotation.y = Math.PI / 2;
+  const lens = mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.01, 24), mat(0xcfe0ff, { metalness: 0.2, roughness: 0.05, transparent: true, opacity: 0.75 }), 0.178, -0.95, 0);
+  lens.rotation.z = Math.PI / 2;
+  lens.visible = false;
+  tube.add(socket, lens);
+
+  tube.position.y = 2.0;
+  tube.rotation.z = THREE.MathUtils.degToRad(40);
+
+  const telescope = group(pier, head, tube);
+  return { telescope, tube, lens, hourPointer: hourDial.pointerPivot, heightPointer: heightDial.pointerPivot };
+}
+
+// Iron-studded oak door on a hinge pivot, in a stone surround, with the brass
+// locking gears beside it. The star plaque is returned separately (placed above it).
+export function buildDoor() {
+  const leaf = group(box(1.1, 2.2, 0.08, M.oak, 0.55, 1.1, 0));
+  for (let i = 1; i < 5; i++) leaf.add(box(0.012, 2.2, 0.085, M.darkWood, i * 0.22, 1.1, 0));
+  for (const y of [0.45, 1.75]) {
+    leaf.add(box(0.9, 0.07, 0.095, M.blackIron, 0.45, y, 0));
+    for (let i = 0; i < 5; i++) leaf.add(sphere(0.014, M.blackIron, 0.08 + i * 0.2, y, 0.05, 8));
+  }
+  const ring = mesh(new THREE.TorusGeometry(0.06, 0.01, 8, 24), M.blackIron, 0.95, 1.0, 0.07);
+  leaf.add(ring, cylinder(0.035, 0.035, 0.02, M.blackIron, 0.95, 1.07, 0.05, 12));
+  leaf.children.at(-1).rotation.x = Math.PI / 2;
+  const hinge = group(leaf);
+  hinge.position.x = -0.55;
+
+  const surround = group(
+    box(0.3, 2.5, 0.5, M.stoneFront, -0.72, 1.25, -0.15),
+    box(0.3, 2.5, 0.5, M.stoneFront, 0.72, 1.25, -0.15),
+    box(1.74, 0.34, 0.5, M.stoneFront, 0, 2.37, -0.15),
+    box(1.0, 0.06, 0.4, M.stoneFront, 0, 0.0, -0.1),
+  );
+
+  // Gear train in a brass-framed recess to the right of the door.
+  const gearMat = M.darkBrass;
+  const gear = (r, teeth, x, y) => {
+    const g = group(cylinder(r, r, 0.03, gearMat, 0, 0, 0, 32), cylinder(r * 0.25, r * 0.25, 0.05, M.brass, 0, 0, 0, 12));
+    for (let i = 0; i < teeth; i++) {
+      const a = (i / teeth) * Math.PI * 2;
+      g.add(box(0.025, 0.03, r * 0.22, gearMat, Math.sin(a) * r, 0, Math.cos(a) * r).rotateY(a));
+    }
+    g.rotation.x = Math.PI / 2;
+    g.position.set(x, y, 0.06);
+    return g;
+  };
+  const gears = group(
+    box(0.5, 0.9, 0.06, M.darkWood, 0, 0, 0),
+    box(0.52, 0.03, 0.08, M.brass, 0, 0.45, 0.01),
+    box(0.52, 0.03, 0.08, M.brass, 0, -0.45, 0.01),
+    gear(0.13, 14, -0.05, 0.2),
+    gear(0.08, 9, 0.12, 0.02),
+    gear(0.11, 12, -0.02, -0.2),
+    box(0.03, 0.03, 0.34, M.iron, -0.28, -0.2, 0.06),
+  );
+  // The wall curves towards the room away from the door, so sit the panel on the
+  // wall's surface at its offset and turn it to match.
+  const GEARS_X = 1.18;
+  const bend = Math.asin(GEARS_X / ROOM_RADIUS);
+  gears.position.set(GEARS_X, 1.25, ROOM_RADIUS * (1 - Math.cos(bend)) + 0.04);
+  gears.rotation.y = -bend;
+
+  const door = group(surround, hinge, gears);
+
+  const starShape = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 ? 0.08 : 0.19;
+    const a = (i / 10) * Math.PI * 2 + Math.PI / 2;
+    const [x, y] = [Math.cos(a) * r, Math.sin(a) * r];
+    if (i === 0) starShape.moveTo(x, y);
+    else starShape.lineTo(x, y);
+  }
+  const star = shadowed(new THREE.Mesh(new THREE.ExtrudeGeometry(starShape, { depth: 0.03, bevelEnabled: true, bevelSize: 0.008, bevelThickness: 0.008, bevelSegments: 2 }), M.brass));
+  const letter = new THREE.Mesh(
+    new THREE.CircleGeometry(0.065, 32),
+    new THREE.MeshStandardMaterial({ map: label('V', { w: 128, h: 128, bg: '#b89048', color: '#2a1a08', size: 0.8, font: 'Palatino, Georgia, serif' }), metalness: 0.7, roughness: 0.35 }),
+  );
+  letter.position.z = 0.041;
+  const doorStar = group(star, letter);
+
+  return { door, hinge, doorStar };
+}
+
+// Packing crate the telescope arrived in, with the eyepiece case on top.
+export function buildEyepieceCase() {
+  const crate = group(box(0.5, 0.48, 0.5, M.oak, 0, 0.24, 0));
+  for (const y of [0.06, 0.42]) {
+    for (const s of [-1, 1]) {
+      crate.add(box(0.52, 0.06, 0.03, M.wood, 0, y, s * 0.255), box(0.03, 0.06, 0.52, M.wood, s * 0.255, y, 0));
+    }
+  }
+  const stencil = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.2), new THREE.MeshStandardMaterial({
+    map: label('WITH CARE\nTHIS WAY UP', { w: 256, h: 128, color: 'rgba(30,20,10,0.8)', size: 0.3, font: 'Courier New, monospace', weight: 'bold' }),
+    transparent: true,
+    roughness: 1,
+  }));
+  stencil.position.set(0, 0.24, 0.252);
+  crate.add(stencil);
+
+  const lid = group(box(0.36, 0.035, 0.24, M.mahogany, 0, 0.0175, 0.12), box(0.06, 0.02, 0.015, M.brass, 0, 0, 0.245));
+  lid.position.set(0, 0.56, -0.12);
+  lid.userData.closedX = 0;
+  lid.userData.openX = -1.9;
+  const eyepieceCase = group(
+    box(0.36, 0.08, 0.24, M.mahogany, 0, 0.52, 0),
+    box(0.33, 0.004, 0.21, M.velvet, 0, 0.559, 0),
+    lid,
+  );
+  for (let i = 0; i < 4; i++) {
+    eyepieceCase.add(cylinder(0.018, 0.018, 0.04, M.brass, -0.11 + i * 0.07, 0.56, 0.02, 12));
+  }
+  for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    eyepieceCase.add(box(0.025, 0.085, 0.025, M.brass, x * 0.17, 0.52, z * 0.11));
+  }
+  return { crate, eyepieceCase, lid };
+}

@@ -1,7 +1,7 @@
 import { el } from '../../../engine/ui.js';
 import { JOURNAL } from '../story.js';
 
-export function renderJournal(body) {
+export function renderJournal(body, game) {
   let page = 0;
   const pageEl = el('div', { class: 'journal-page handwritten' });
   const counter = el('span', { class: 'page-count' });
@@ -9,16 +9,21 @@ export function renderJournal(body) {
   const next = el('button', { class: 'btn subtle', onclick: () => go(1) }, 'Next →');
 
   function go(step) {
-    page = Math.max(0, Math.min(JOURNAL.length - 1, page + step));
+    const next = Math.max(0, Math.min(JOURNAL.length - 1, page + step));
+    if (next !== page) game?.sfx?.('paper');
+    page = next;
     show();
   }
 
   function show() {
     const entry = JOURNAL[page];
+    const text = entry.torn && game?.state.has('page.assembled')
+      ? [...entry.text, 'You have the missing page now, pieced back together in your satchel.']
+      : entry.text;
     pageEl.classList.toggle('torn', Boolean(entry.torn));
     pageEl.replaceChildren(
-      ...(entry.date ? [el('h3', {}, entry.date)] : []),
-      ...entry.text.map((t) => el('p', {}, t)));
+      ...(entry.date ? [game?.narrator?.button(`journal-${page}`), el('h3', {}, entry.date)].filter(Boolean) : []),
+      ...text.map((t) => el('p', {}, t)));
     counter.textContent = `${page + 1} / ${JOURNAL.length}`;
     prev.disabled = page === 0;
     next.disabled = page === JOURNAL.length - 1;
