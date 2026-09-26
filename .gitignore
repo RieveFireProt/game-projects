@@ -1,0 +1,13 @@
+# Editor settings
+.vscode/
+
+# Generated standalone build
+cat_warrior_levels/cat-warrior-levels.standalone.html
+
+# Godot build and import data
+cat-simulator/.godot/
+cat-simulator/android/
+
+# Vite dependencies and build output
+escape-rooms/node_modules/
+escape-rooms/dist/
